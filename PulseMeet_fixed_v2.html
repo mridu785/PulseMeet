@@ -1,0 +1,5034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1017" />
+  <title>PulseMeet — Real-Time WebRTC Video &amp; Voice Conferencing</title>
+  <style>
+    /* ==========================================================================
+       1. CSS VARIABLES & RESET (Modern Dark Theme Inspired by Zoom & Meet)
+       ========================================================================== */
+    :root {
+      --bg-primary: #0d1017;
+      --bg-secondary: #151923;
+      --bg-elevated: #1c2230;
+      --bg-card: #181d29;
+      --bg-tile: #141822;
+      --bg-overlay: rgba(13, 16, 23, 0.86);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(59, 130, 246, 0.55);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-blue: #2563eb;
+      --accent-blue-hover: #1d4ed8;
+      --accent-blue-soft: rgba(37, 99, 235, 0.16);
+      --accent-green: #10b981;
+      --accent-green-soft: rgba(16, 185, 129, 0.16);
+      --accent-amber: #f59e0b;
+      --accent-amber-soft: rgba(245, 158, 11, 0.16);
+      --accent-red: #ef4444;
+      --accent-red-hover: #dc2626;
+      --accent-red-soft: rgba(239, 68, 68, 0.16);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+
+    [data-accent="indigo"] {
+      --accent-blue: #4f46e5;
+      --accent-blue-hover: #4338ca;
+      --accent-blue-soft: rgba(79, 70, 229, 0.18);
+    }
+
+    [data-accent="teal"] {
+      --accent-blue: #0d9488;
+      --accent-blue-hover: #0f766e;
+      --accent-blue-soft: rgba(13, 148, 136, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    /* ==========================================================================
+       2. APP SHELL, HEADER & NOTIFICATIONS
+       ========================================================================== */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+      background: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.08), transparent 55%), var(--bg-primary);
+    }
+
+    .top-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(12px + var(--safe-top)) 24px 12px;
+      background: rgba(21, 25, 35, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-blue), #60a5fa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+      flex-shrink: 0;
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      color: #ffffff;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-blue-soft);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .signaling-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-dot.online {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .status-dot.local {
+      background: var(--accent-amber);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
+
+    .status-dot.error {
+      background: var(--accent-red);
+    }
+
+    .nav-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 500;
+      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .nav-icon-btn:hover {
+      background: #252d3f;
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px 4px 4px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .avatar-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    /* Alert / Error Banner */
+    .global-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 20px;
+      background: rgba(245, 158, 11, 0.14);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+      font-size: 0.84rem;
+    }
+
+    .global-banner.visible {
+      display: flex;
+    }
+
+    .global-banner.error-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border-bottom-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .global-banner.info-banner {
+      background: rgba(37, 99, 235, 0.15);
+      border-bottom-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+
+    /* Toast container */
+    .toast-stack {
+      position: fixed;
+      top: 72px;
+      right: 20px;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+      width: calc(100% - 40px);
+      pointer-events: none;
+    }
+
+    .toast-item {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: #1e2536;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow-md);
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      animation: slideInToast 180ms ease-out;
+    }
+
+    .toast-item.toast-error {
+      border-left: 4px solid var(--accent-red);
+    }
+
+    .toast-item.toast-success {
+      border-left: 4px solid var(--accent-green);
+    }
+
+    .toast-item.toast-warn {
+      border-left: 4px solid var(--accent-amber);
+    }
+
+    .toast-item.toast-info {
+      border-left: 4px solid var(--accent-blue);
+    }
+
+    @keyframes slideInToast {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Views switching */
+    .view-section {
+      display: none;
+      flex: 1;
+    }
+
+    .view-section.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       3. HOME SCREEN (DASHBOARD)
+       ========================================================================== */
+    .home-container {
+      max-width: 1140px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero-header {
+      margin-bottom: 20px;
+    }
+
+    .hero-header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .hero-header p {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+    }
+
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .action-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      text-align: left;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+    .action-tile:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: #22293a;
+    }
+
+    .action-tile.primary-tile {
+      background: linear-gradient(145deg, rgba(37, 99, 235, 0.24), rgba(37, 99, 235, 0.08));
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .action-tile.primary-tile:hover {
+      background: linear-gradient(145deg, rgba(37, 99, 235, 0.34), rgba(37, 99, 235, 0.14));
+    }
+
+    .action-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-blue);
+      color: #fff;
+    }
+
+    .action-icon-box.voice-box {
+      background: #0d9488;
+    }
+
+    .action-tile-title {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 2px;
+    }
+
+    .action-tile-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .text-input, .select-input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-size: 0.92rem;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .text-input:focus, .select-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent-blue);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-blue-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #262f42;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-danger {
+      background: var(--accent-red);
+      color: #ffffff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: var(--accent-red-hover);
+    }
+
+    /* Device Status & Recent Meetings */
+    .device-readout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .device-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+    }
+
+    .device-status-pill .status-label {
+      color: var(--text-secondary);
+      font-size: 0.74rem;
+      display: block;
+    }
+
+    .device-status-pill .status-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-title-row h2 {
+      font-size: 1.02rem;
+      font-weight: 600;
+    }
+
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 290px;
+      overflow-y: auto;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .recent-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .recent-room-id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #93c5fd;
+    }
+
+    .recent-sub {
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty-state-box {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      background: var(--bg-primary);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-sm);
+    }
+
+    /* ==========================================================================
+       4. PRE-MEETING LOBBY
+       ========================================================================== */
+    .lobby-container {
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .preview-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #090b10;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-stage video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: radial-gradient(circle at center, #1e2638 0%, #0d1017 100%);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .preview-placeholder.hidden {
+      display: none;
+    }
+
+    .preview-avatar-large {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #ffffff;
+      font-size: 1.9rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.18);
+    }
+
+    .preview-overlay-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(13, 16, 23, 0.82);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .media-circle-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      transition: background var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .media-circle-btn:hover {
+      background: #2b354b;
+    }
+
+    .media-circle-btn.off {
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      color: #ffffff;
+    }
+
+    .audio-meter-bar {
+      width: 90px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+
+    .audio-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-green);
+      transition: width 60ms linear;
+    }
+
+    .mode-switch-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 4px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+    }
+
+    .mode-switch-btn {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    .mode-switch-btn.active {
+      background: var(--accent-blue);
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       5. MAIN MEETING INTERFACE (VIDEO GRID & VOICE STAGE)
+       ========================================================================== */
+    .meeting-viewport {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      background: #080a0f;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+    }
+
+    .meeting-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(10px + var(--safe-top)) 18px 10px;
+      background: rgba(15, 18, 26, 0.92);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 20;
+    }
+
+    .meeting-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .meeting-room-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 11px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+
+    .connection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: var(--accent-green-soft);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .connection-badge.connecting, .connection-badge.reconnecting {
+      background: var(--accent-amber-soft);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .connection-badge.failed, .connection-badge.disconnected {
+      background: var(--accent-red-soft);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .meeting-timer {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Screen Share Active Banner */
+    .screen-share-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 18px;
+      background: rgba(16, 185, 129, 0.16);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      font-size: 0.84rem;
+    }
+
+    .screen-share-banner.active {
+      display: flex;
+    }
+
+    /* Main Workspace Area */
+    .meeting-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .stage-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      overflow-y: auto;
+      min-width: 0;
+      gap: 12px;
+    }
+
+    /* Speaker / Pinned Stage Layout */
+    .pinned-stage {
+      display: none;
+      flex: 1;
+      min-height: 260px;
+      background: var(--bg-tile);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pinned-stage.active {
+      display: flex;
+    }
+
+    .video-grid {
+      flex: 1;
+      display: grid;
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+      align-content: center;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-auto-rows: minmax(200px, 1fr);
+    }
+
+    .video-grid[data-count="1"] {
+      grid-template-columns: minmax(280px, 920px);
+      justify-content: center;
+    }
+
+    .video-grid[data-count="2"] {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .video-tile {
+      position: relative;
+      background: var(--bg-tile);
+      border-radius: var(--radius-md);
+      border: 2px solid rgba(255, 255, 255, 0.07);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 190px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .video-tile.speaking {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    }
+
+    .video-tile video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #090b10;
+    }
+
+    .video-tile video.mirrored {
+      transform: scaleX(-1);
+    }
+
+    .video-tile video.screen-video {
+      object-fit: contain;
+      transform: none;
+    }
+
+    .tile-avatar-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: radial-gradient(circle at center, #1f273b 0%, #10141f 100%);
+      z-index: 2;
+    }
+
+    .tile-avatar-fallback.hidden {
+      display: none;
+    }
+
+    .tile-avatar-circle {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #ffffff;
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .video-tile.speaking .tile-avatar-circle {
+      transform: scale(1.06);
+      box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.28);
+    }
+
+    .tile-top-badges {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tile-pin-btn {
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: rgba(13, 16, 23, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+      backdrop-filter: blur(6px);
+    }
+
+    .tile-pin-btn:hover {
+      color: #fff;
+      background: rgba(37, 99, 235, 0.75);
+    }
+
+    .tile-conn-pill {
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(13, 16, 23, 0.78);
+      color: #d1d5db;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .tile-bottom-bar {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .tile-name-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      background: rgba(13, 16, 23, 0.78);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      font-weight: 500;
+      max-width: 80%;
+    }
+
+    .tile-name-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .host-mini-badge {
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(37, 99, 235, 0.35);
+      color: #93c5fd;
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .tile-status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mic-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(13, 16, 23, 0.8);
+      color: var(--accent-green);
+    }
+
+    .mic-badge.muted {
+      background: rgba(239, 68, 68, 0.9);
+      color: #ffffff;
+    }
+
+    /* Dedicated Voice-Only Mode Stage */
+    .voice-mode-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(13, 148, 136, 0.16);
+      border: 1px solid rgba(20, 184, 166, 0.35);
+      color: #5eead4;
+      font-size: 0.8rem;
+      font-weight: 600;
+      align-self: center;
+    }
+
+    .voice-mode-banner.active {
+      display: inline-flex;
+    }
+
+    /* ==========================================================================
+       6. PARTICIPANTS SIDEBAR / BOTTOM SHEET
+       ========================================================================== */
+    .side-drawer {
+      width: 330px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      display: none;
+      flex-direction: column;
+      z-index: 30;
+    }
+
+    .side-drawer.open {
+      display: flex;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .drawer-header h3 {
+      font-size: 0.96rem;
+      font-weight: 600;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .participant-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .participant-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .participant-meta {
+      min-width: 0;
+    }
+
+    .participant-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .participant-sub {
+      font-size: 0.73rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .participant-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .mini-ctrl-btn {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .mini-ctrl-btn:hover {
+      color: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .mini-ctrl-btn.danger:hover {
+      background: var(--accent-red);
+      color: #fff;
+      border-color: var(--accent-red);
+    }
+
+    /* ==========================================================================
+       7. BOTTOM MEETING CONTROL TOOLBAR
+       ========================================================================== */
+    .meeting-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+      background: rgba(15, 18, 26, 0.95);
+      border-top: 1px solid var(--border-subtle);
+      z-index: 25;
+    }
+
+    .ctrl-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-width: 68px;
+      height: 54px;
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: var(--text-primary);
+      font-size: 0.72rem;
+      font-weight: 500;
+      position: relative;
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .ctrl-btn:hover:not(:disabled) {
+      background: #273044;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .ctrl-btn.off-state {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #fca5a5;
+    }
+
+    .ctrl-btn.active-feature {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+
+    .ctrl-btn.leave-btn {
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .ctrl-btn.leave-btn:hover {
+      background: var(--accent-red-hover);
+    }
+
+    .ctrl-btn.end-all-btn {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+
+    .ctrl-btn.end-all-btn:hover {
+      background: var(--accent-red);
+      color: #ffffff;
+    }
+
+    .badge-counter {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-blue);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       8. MODALS (INFO, CONFIG, GUIDE, END MEETING CONFIRMATION)
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      max-width: 600px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .code-snippet {
+      background: #090b10;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .info-kv-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .info-kv-row strong {
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       9. RESPONSIVE MEDIA QUERIES (MOBILE & TABLET)
+       ========================================================================== */
+    @media (max-width: 900px) {
+      .home-container, .lobby-container {
+        grid-template-columns: 1fr;
+      }
+
+      .side-drawer {
+        position: fixed;
+        inset: auto 0 0 0;
+        width: 100%;
+        max-height: 70vh;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 18px 18px 0 0;
+        box-shadow: var(--shadow-lg);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .top-navbar {
+        padding: calc(10px + var(--safe-top)) 14px 10px;
+      }
+
+      .brand-badge, .profile-name-label {
+        display: none;
+      }
+
+      .quick-actions-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ctrl-btn {
+        min-width: 54px;
+        height: 48px;
+        padding: 4px 8px;
+        font-size: 0.66rem;
+      }
+
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app-shell">
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar" id="top-navbar">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <span>PulseMeet</span>
+          <span class="brand-badge">WebRTC Mesh</span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <div class="signaling-pill" id="signaling-status-pill" title="Current Signaling Transport Status">
+          <span class="status-dot" id="signaling-status-dot"></span>
+          <span id="signaling-status-text">Checking Signaling...</span>
+        </div>
+
+        <button type="button" class="nav-icon-btn" id="btn-open-config" title="Configure Firebase &amp; STUN/TURN Servers">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Signaling &amp; ICE</span>
+        </button>
+
+        <button type="button" class="nav-icon-btn" id="btn-open-guide" title="Setup Guide, Security Rules &amp; Testing Checklist">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          <span>Setup &amp; Rules</span>
+        </button>
+
+        <div class="profile-chip" title="Your Local Display Profile">
+          <div class="avatar-circle" id="header-avatar">GU</div>
+          <span class="profile-name-label" id="header-display-name" style="font-size:0.82rem;font-weight:600;">Guest User</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Status / Error / Compatibility Banner -->
+    <div class="global-banner" id="global-banner" role="status" aria-live="polite">
+      <span id="global-banner-text"></span>
+      <button type="button" class="mini-ctrl-btn" id="btn-dismiss-banner">Dismiss</button>
+    </div>
+
+    <!-- Toast Notifications Stack -->
+    <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <!-- ======================================================================
+         VIEW 1: HOME DASHBOARD
+         ====================================================================== -->
+    <main class="view-section active" id="view-home">
+      <div class="home-container">
+        <!-- Left Column: Start or Join Meeting -->
+        <section class="panel-card">
+          <div class="hero-header">
+            <h1>Real-Time Video &amp; Voice Meetings</h1>
+            <p>End-to-end WebRTC peer-to-peer media with Firebase Realtime Database signaling. Camera and microphone remain off until you preview or join.</p>
+          </div>
+
+          <!-- Display Name & Theme Preference -->
+          <div class="form-group">
+            <label class="form-label" for="home-display-name">Your Display Name</label>
+            <div class="input-row">
+              <input type="text" id="home-display-name" class="text-input" placeholder="Enter your full name or handle" maxlength="40" autocomplete="name" />
+              <select id="home-theme-select" class="select-input" style="max-width: 145px;" title="Accent Theme Preference">
+                <option value="blue">Blue Accent</option>
+                <option value="indigo">Indigo Accent</option>
+                <option value="teal">Teal Accent</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick Launch Tiles -->
+          <div class="quick-actions-grid">
+            <button type="button" class="action-tile primary-tile" id="btn-new-video-meeting">
+              <div class="action-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+              </div>
+              <div>
+                <div class="action-tile-title">New Video Meeting</div>
+                <div class="action-tile-desc">Generate a secure room ID and open the camera/mic preview lobby</div>
+              </div>
+            </button>
+
+            <button type="button" class="action-tile" id="btn-new-voice-meeting">
+              <div class="action-icon-box voice-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </div>
+              <div>
+                <div class="action-tile-title">New Voice-Only Call</div>
+                <div class="action-tile-desc">Low-bandwidth audio conferencing with speaking indicators &amp; no camera</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Join Existing Meeting by ID -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="home-meeting-id">Join with a Meeting ID or Invitation Code</label>
+            <div class="input-row">
+              <input type="text" id="home-meeting-id" class="text-input" placeholder="e.g. k9m-4p2x-7vq" maxlength="36" autocomplete="off" />
+              <button type="button" class="btn btn-primary" id="btn-join-existing">
+                <span>Join Lobby</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hardware & Permission Status Readout (No automatic activation) -->
+          <div class="device-readout-grid">
+            <div class="device-status-pill">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              </svg>
+              <div>
+                <span class="status-label">Microphone Status</span>
+                <span class="status-value" id="home-mic-status">Standby (Off until Lobby)</span>
+              </div>
+            </div>
+
+            <div class="device-status-pill">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+              <div>
+                <span class="status-label">Camera Status</span>
+                <span class="status-value" id="home-cam-status">Standby (Off until Lobby)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Column: Recent Meetings & Quick Diagnostics -->
+        <section class="panel-card">
+          <div class="section-title-row">
+            <h2>Recent Meeting History</h2>
+            <button type="button" class="mini-ctrl-btn" id="btn-clear-history">Clear History</button>
+          </div>
+          <div class="recent-list" id="recent-meetings-list"></div>
+
+          <div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-subtle);">
+            <div class="section-title-row" style="margin-bottom: 8px;">
+              <h2>Environment &amp; Security Check</h2>
+              <button type="button" class="mini-ctrl-btn" id="btn-check-devices">Check Permissions</button>
+            </div>
+            <p style="font-size: 0.81rem; color: var(--text-secondary); margin-bottom: 10px;" id="env-diagnostics-text">
+              Verifying WebRTC RTCPeerConnection, Secure Context (HTTPS/localhost), and Signaling transport...
+            </p>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;" id="env-badges-row"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ======================================================================
+         VIEW 2: PRE-MEETING LOBBY
+         ====================================================================== -->
+    <section class="view-section" id="view-lobby">
+      <div class="lobby-container">
+        <!-- Left: Camera & Audio Preview Stage -->
+        <div>
+          <div class="preview-stage" id="lobby-preview-stage">
+            <video id="lobby-video-preview" autoplay playsinline muted></video>
+            <div class="preview-placeholder" id="lobby-preview-placeholder">
+              <div class="preview-avatar-large" id="lobby-avatar-circle">GU</div>
+              <div style="font-weight:600; font-size:1rem;" id="lobby-placeholder-title">Camera Preview Off</div>
+              <div style="font-size:0.82rem; color:var(--text-secondary); max-width:340px;" id="lobby-placeholder-sub">
+                Enable your camera below to preview video, or join in voice-only mode.
+              </div>
+            </div>
+
+            <div class="preview-overlay-controls">
+              <button type="button" class="media-circle-btn" id="btn-lobby-mic" title="Toggle Microphone Preview">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icon-lobby-mic">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                </svg>
+              </button>
+
+              <div class="audio-meter-bar" title="Live Microphone Input Level">
+                <div class="audio-meter-fill" id="lobby-audio-meter"></div>
+              </div>
+
+              <button type="button" class="media-circle-btn" id="btn-lobby-cam" title="Toggle Camera Preview">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="icon-lobby-cam">
+                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="lobby-permission-help" style="display:none; margin-top:12px; padding:12px 14px; border-radius:var(--radius-sm); background:rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.35); font-size:0.82rem; color:#fcd34d;">
+            <strong style="display:block; margin-bottom:4px;">Camera or Microphone Unavailable</strong>
+            <span id="lobby-permission-help-text"></span>
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              <button type="button" class="mini-ctrl-btn" id="btn-lobby-retry-media">Retry Device Access</button>
+              <button type="button" class="mini-ctrl-btn" id="btn-lobby-switch-voice">Switch to Voice-Only Mode</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Lobby Settings & Join Form -->
+        <div class="panel-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <h2 style="font-size:1.2rem; font-weight:700;">Pre-Meeting Lobby</h2>
+            <span class="meeting-room-chip" id="lobby-room-badge">---</span>
+          </div>
+
+          <div class="mode-switch-group" role="tablist" aria-label="Call Mode">
+            <button type="button" class="mode-switch-btn active" id="btn-mode-video" data-mode="video">Video &amp; Voice Call</button>
+            <button type="button" class="mode-switch-btn" id="btn-mode-voice" data-mode="voice">Voice-Only Mode</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="lobby-display-name">Display Name in Meeting</label>
+            <input type="text" id="lobby-display-name" class="text-input" placeholder="Your name" maxlength="40" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="lobby-meeting-title">Meeting Topic / Title (Optional)</label>
+            <input type="text" id="lobby-meeting-title" class="text-input" placeholder="e.g. Sprint Architecture Sync" maxlength="60" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="lobby-mic-select">Microphone Input</label>
+            <select id="lobby-mic-select" class="select-input">
+              <option value="">Default Microphone</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="lobby-cam-select-group">
+            <label class="form-label" for="lobby-cam-select">Camera Input</label>
+            <select id="lobby-cam-select" class="select-input">
+              <option value="">Default Camera</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:20px;">
+            <button type="button" class="btn btn-secondary" id="btn-lobby-cancel" style="flex:0.45;">
+              Back
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-lobby-join-now" style="flex:1;">
+              Join Meeting Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 3: ACTIVE MEETING ROOM (VIDEO & VOICE MODES)
+         ====================================================================== -->
+    <section class="view-section" id="view-meeting">
+      <div class="meeting-viewport">
+        <!-- Meeting Top Header -->
+        <div class="meeting-topbar">
+          <div class="meeting-meta-left">
+            <span class="meeting-room-chip" id="active-room-code">---</span>
+            <span id="active-meeting-title" style="font-weight:600; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;">Meeting Room</span>
+            <span class="connection-badge" id="active-connection-badge">Connecting</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span class="voice-mode-banner" id="active-voice-banner">Voice-Only Mode</span>
+            <span class="meeting-timer" id="active-call-timer">00:00</span>
+            <button type="button" class="mini-ctrl-btn" id="btn-resume-audio" style="display:none; background:var(--accent-amber); color:#000; border:none;">
+              Tap to Unmute Browser Audio
+            </button>
+          </div>
+        </div>
+
+        <!-- Screen Share Active Indicator -->
+        <div class="screen-share-banner" id="screen-share-banner">
+          <span>You are currently sharing your screen with everyone in this room.</span>
+          <button type="button" class="btn btn-danger" id="btn-banner-stop-share" style="padding:5px 12px; font-size:0.78rem;">
+            Stop Sharing
+          </button>
+        </div>
+
+        <!-- Main Video / Voice Stage + Participants Sidebar -->
+        <div class="meeting-body">
+          <div class="stage-container">
+            <div class="pinned-stage" id="pinned-stage"></div>
+            <div class="video-grid" id="video-grid" data-count="1"></div>
+          </div>
+
+          <!-- Participants Sidebar / Bottom Sheet -->
+          <aside class="side-drawer" id="participants-drawer" aria-label="Participants List">
+            <div class="drawer-header">
+              <h3>Participants (<span id="drawer-participant-count">1</span>)</h3>
+              <button type="button" class="mini-ctrl-btn" id="btn-close-drawer">Close</button>
+            </div>
+            <div class="drawer-content" id="participants-list-container"></div>
+          </aside>
+        </div>
+
+        <!-- Bottom Control Toolbar -->
+        <div class="meeting-toolbar" role="toolbar" aria-label="Meeting Controls">
+          <button type="button" class="ctrl-btn" id="btn-toggle-mic">
+            <span id="toolbar-mic-icon"></span>
+            <span id="toolbar-mic-label">Mute</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="btn-toggle-cam">
+            <span id="toolbar-cam-icon"></span>
+            <span id="toolbar-cam-label">Stop Video</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="btn-share-screen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span id="toolbar-share-label">Share Screen</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="btn-participants">
+            <span class="badge-counter" id="toolbar-participant-badge">1</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Participants</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="btn-copy-invite">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy Invite</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="btn-meeting-info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Meeting Info</span>
+          </button>
+
+          <button type="button" class="ctrl-btn leave-btn" id="btn-leave-meeting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Leave</span>
+          </button>
+
+          <button type="button" class="ctrl-btn end-all-btn" id="btn-end-meeting" style="display:none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+            </svg>
+            <span>End All</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         MODAL 1: MEETING INFORMATION & INVITATION
+         ====================================================================== -->
+    <div class="modal-backdrop" id="modal-meeting-info" role="dialog" aria-modal="true" aria-labelledby="title-meeting-info">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="title-meeting-info">Meeting Information &amp; Shareable Invitation</h3>
+          <button type="button" class="mini-ctrl-btn" id="btn-close-info-modal">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="info-kv-row"><span>Meeting Title</span><strong id="info-modal-title">---</strong></div>
+          <div class="info-kv-row"><span>Meeting ID</span><strong id="info-modal-id">---</strong></div>
+          <div class="info-kv-row"><span>Call Mode</span><strong id="info-modal-mode">---</strong></div>
+          <div class="info-kv-row"><span>Room Host</span><strong id="info-modal-host">---</strong></div>
+          <div class="info-kv-row"><span>Signaling Transport</span><strong id="info-modal-signaling">---</strong></div>
+          <div class="info-kv-row"><span>Mesh Topology Limit</span><strong>Up to 8 Participants</strong></div>
+
+          <div>
+            <label class="form-label" style="margin-top:8px;">Shareable Invitation Text</label>
+            <div class="code-snippet" id="info-modal-invite-text"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-info-copy-id">Copy Meeting ID</button>
+          <button type="button" class="btn btn-primary" id="btn-info-copy-full">Copy Full Invitation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL 2: CONFIRM END MEETING FOR EVERYONE (HOST ONLY)
+         ====================================================================== -->
+    <div class="modal-backdrop" id="modal-confirm-end" role="dialog" aria-modal="true" aria-labelledby="title-confirm-end">
+      <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3 id="title-confirm-end">End Meeting for Everyone?</h3>
+          <button type="button" class="mini-ctrl-btn" id="btn-cancel-end-modal">Cancel</button>
+        </div>
+        <div class="modal-body">
+          <p>As the meeting host, ending the meeting for everyone will immediately terminate the session, close all participant connections, and remove the room signaling state.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-confirm-leave-only">Leave Only</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-end-all">End Meeting for All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL 3: FIREBASE & STUN/TURN RUNTIME CONFIGURATION
+         ====================================================================== -->
+    <div class="modal-backdrop" id="modal-config" role="dialog" aria-modal="true" aria-labelledby="title-config-modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="title-config-modal">Firebase Signaling &amp; ICE (STUN/TURN) Configuration</h3>
+          <button type="button" class="mini-ctrl-btn" id="btn-close-config-modal">Close</button>
+        </div>
+        <div class="modal-body">
+          <p>
+            You can either edit the <code>firebaseConfig</code> and <code>ICE_CONFIGURATION</code> constants directly in <code>index.html</code>, or paste your Firebase project configuration JSON below for runtime signaling. When Firebase is unconfigured (using placeholder values), PulseMeet automatically falls back to browser-native <code>BroadcastChannel</code> signaling so you can test real WebRTC peer connections across multiple tabs on the same device.
+          </p>
+          <div class="form-group" style="margin-bottom:4px;">
+            <label class="form-label" for="config-firebase-json">Firebase Configuration JSON (Optional Runtime Override)</label>
+            <textarea id="config-firebase-json" class="text-input" rows="6" style="font-family:monospace; font-size:0.78rem;" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"https://your-project-default-rtdb.firebaseio.com","projectId":"...","appId":"..."}'></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="config-turn-json">Custom ICE Servers Array JSON (STUN / Optional TURN)</label>
+            <textarea id="config-turn-json" class="text-input" rows="4" style="font-family:monospace; font-size:0.78rem;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-reset-config">Reset to Defaults</button>
+          <button type="button" class="btn btn-primary" id="btn-save-config">Apply &amp; Reconnect Signaling</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL 4: SETUP GUIDE, SECURITY RULES & MULTI-DEVICE TESTING CHECKLIST
+         ====================================================================== -->
+    <div class="modal-backdrop" id="modal-guide" role="dialog" aria-modal="true" aria-labelledby="title-guide-modal">
+      <div class="modal-dialog" style="max-width: 680px;">
+        <div class="modal-header">
+          <h3 id="title-guide-modal">Setup Guide, Firebase Security Rules &amp; Testing Checklist</h3>
+          <button type="button" class="mini-ctrl-btn" id="btn-close-guide-modal">Close</button>
+        </div>
+        <div class="modal-body">
+          <h4 style="color:var(--text-primary);">1. Concise Firebase Setup Guide</h4>
+          <p>1. Create a Firebase project at console.firebase.google.com and enable <strong>Realtime Database</strong> and <strong>Authentication &rarr; Anonymous Sign-In</strong>.<br/>
+          2. Copy your Web App's <code>firebaseConfig</code> object into the clearly marked section in <code>index.html</code> (or paste it in the Signaling &amp; ICE dialog).<br/>
+          3. Serve <code>index.html</code> over <strong>HTTPS</strong> or <code>http://localhost</code> (required by browsers for <code>getUserMedia</code> and <code>getDisplayMedia</code>).</p>
+
+          <h4 style="color:var(--text-primary);">2. Firebase Realtime Database Security Rules</h4>
+          <p>Use the companion <code>firebase-database.rules.json</code> file supplied with this build. It requires Anonymous Authentication, restricts participant updates to the signed-in user, restricts host operations to the current host, and limits signalling reads to the intended recipient. Keep the database in Locked mode until those rules are published.</p>
+          <p><strong>Important:</strong> Do not use public test-mode rules or a blanket authenticated write rule.</p>
+
+          <h4 style="color:var(--text-primary);">3. Browser Compatibility Limitations</h4>
+          <p>&bull; <strong>Screen Sharing (<code>getDisplayMedia</code>):</strong> Supported on desktop Chrome, Edge, Firefox, and Safari. Android and iOS mobile browsers generally do not support capturing the device screen from a web page.<br/>
+          &bull; <strong>NAT Traversal (TURN):</strong> Public STUN servers work for most home/office networks, but symmetric NATs or strict corporate firewalls require configuring a TURN server.<br/>
+          &bull; <strong>Mesh Scaling:</strong> Peer-to-peer mesh encodes/decodes streams per peer and is capped at 8 participants; larger rooms require an SFU.</p>
+
+          <h4 style="color:var(--text-primary);">4. Two-or-More Device Testing Checklist</h4>
+          <p>&bull; Create a meeting on Device A and copy the invitation link or Room ID.<br/>
+          &bull; Join the Room ID on Device B and verify mutual live video &amp; bidirectional audio.<br/>
+          &bull; Toggle Microphone &amp; Camera independently on each device and confirm badge updates.<br/>
+          &bull; Test Voice-Only Mode, Screen Sharing (on desktop), Participant Sidebar, and Host End-for-All.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btn-guide-done">Got It</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       APPLICATION JAVASCRIPT (8 MODULAR CLASSES + FIREBASE CDN IMPORTS)
+       ======================================================================== -->
+  <script type="module">
+    /* ========================================================================
+       SECTION A: FIREBASE MODULAR SDK CDN IMPORTS
+       Loaded dynamically from official Google gstatic CDN with safe fallback so
+       the application boots cleanly even in restricted/offline sandboxes.
+       ======================================================================== */
+    const FIREBASE_CDN_VERSION = "10.14.1";
+    const FIREBASE_APP_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_CDN_VERSION}/firebase-app.js`;
+    const FIREBASE_DB_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_CDN_VERSION}/firebase-database.js`;
+    const FIREBASE_AUTH_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_CDN_VERSION}/firebase-auth.js`;
+
+    /* ========================================================================
+       SECTION B: CLEARLY MARKED FIREBASE CONFIGURATION SECTION
+       ========================================================================
+       INSTRUCTIONS FOR PRODUCTION DEPLOYMENT:
+       1. Replace the placeholder values below with your actual Firebase Web App
+          credentials from Firebase Console -> Project Settings -> General.
+       2. Ensure Firebase Realtime Database is created and `databaseURL` points
+          to your instance (e.g. "https://your-project-default-rtdb.firebaseio.com").
+       3. Enable Anonymous Authentication in Firebase Console -> Authentication
+          so participants receive an authenticated `auth.uid` for security rules.
+       4. NEVER place service-account private keys or admin secrets in this file.
+       ======================================================================== */
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    /* ========================================================================
+       SECTION C: CLEARLY MARKED ICE SERVER (STUN / TURN) CONFIGURATION SECTION
+       ========================================================================
+       INSTRUCTIONS FOR STUN / TURN CONFIGURATION:
+       - Public Google STUN servers are configured by default for NAT discovery.
+       - For strict corporate firewalls or symmetric NATs, uncomment and populate
+         the optional TURN server entry with real credentials from a provider
+         (e.g. Coturn, Metered, Twilio Network Traversal, or Cloudflare Calls).
+       - Never hardcode fake TURN credentials, as invalid TURN servers slow down
+         ICE gathering and cause connection timeouts.
+       ======================================================================== */
+    const DEFAULT_ICE_SERVERS = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" }
+      /* Optional TURN Server Configuration (Uncomment and insert real credentials when available):
+      ,{
+        urls: [
+          "turn:your-turn-server.example.com:3478?transport=udp",
+          "turn:your-turn-server.example.com:3478?transport=tcp",
+          "turns:your-turn-server.example.com:5349?transport=tcp"
+        ],
+        username: "INSERT_TURN_USERNAME",
+        credential: "INSERT_TURN_CREDENTIAL"
+      }
+      */
+    ];
+
+    const MAX_MESH_PARTICIPANTS = 8;
+    const ROOM_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours expiration for stale rooms
+    const PEER_CONNECTION_TIMEOUT_MS = 18000;
+    const MAX_ICE_RESTART_ATTEMPTS = 3;
+
+    /* ========================================================================
+       MODULE 1: StorageManager
+       Handles localStorage persistence for display name, device preferences,
+       theme preference, and recent meeting history (never storing private tokens).
+       ======================================================================== */
+    class StorageManager {
+      constructor() {
+        this.prefix = "pulsemeet_v1_";
+      }
+
+      _get(key, fallback = null) {
+        try {
+          const raw = window.localStorage.getItem(this.prefix + key);
+          return raw !== null ? JSON.parse(raw) : fallback;
+        } catch (_err) {
+          return fallback;
+        }
+      }
+
+      _set(key, value) {
+        try {
+          window.localStorage.setItem(this.prefix + key, JSON.stringify(value));
+        } catch (_err) {
+          // Ignore storage quota or sandbox restrictions
+        }
+      }
+
+      _remove(key) {
+        try {
+          window.localStorage.removeItem(this.prefix + key);
+        } catch (_err) {
+          // Ignore
+        }
+      }
+
+      getPreferences() {
+        return {
+          displayName: this._get("displayName", "Alex Rivera"),
+          micEnabled: this._get("micEnabled", true),
+          camEnabled: this._get("camEnabled", true),
+          preferredMicId: this._get("preferredMicId", ""),
+          preferredCamId: this._get("preferredCamId", ""),
+          themeAccent: this._get("themeAccent", "blue")
+        };
+      }
+
+      savePreferences(partial) {
+        const current = this.getPreferences();
+        const updated = { ...current, ...partial };
+        Object.keys(updated).forEach((k) => this._set(k, updated[k]));
+        return updated;
+      }
+
+      getRecentMeetings() {
+        const list = this._get("recentMeetings", []);
+        return Array.isArray(list) ? list : [];
+      }
+
+      addRecentMeeting(entry) {
+        if (!entry || !entry.roomId) return;
+        const current = this.getRecentMeetings().filter((item) => item.roomId !== entry.roomId);
+        current.unshift({
+          roomId: String(entry.roomId).trim(),
+          title: String(entry.title || "PulseMeet Session").slice(0, 60),
+          mode: entry.mode === "voice" ? "voice" : "video",
+          role: entry.role || "Participant",
+          timestamp: Date.now()
+        });
+        this._set("recentMeetings", current.slice(0, 10));
+      }
+
+      clearRecentMeetings() {
+        this._set("recentMeetings", []);
+      }
+
+      getRuntimeFirebaseConfig() {
+        return this._get("runtimeFirebaseConfig", null);
+      }
+
+      setRuntimeFirebaseConfig(cfg) {
+        if (!cfg) {
+          this._remove("runtimeFirebaseConfig");
+        } else {
+          this._set("runtimeFirebaseConfig", cfg);
+        }
+      }
+
+      getRuntimeIceServers() {
+        return this._get("runtimeIceServers", null);
+      }
+
+      setRuntimeIceServers(servers) {
+        if (!servers) {
+          this._remove("runtimeIceServers");
+        } else {
+          this._set("runtimeIceServers", servers);
+        }
+      }
+    }
+
+    /* ========================================================================
+       MODULE 2: FirebaseSignaling
+       Provides a clean signaling abstraction over Firebase Realtime Database
+       using the official Firebase Modular SDK, with automatic fallback to
+       browser-native BroadcastChannel + storage signaling when placeholder
+       credentials ("YOUR_API_KEY") are present.
+       ======================================================================== */
+    class FirebaseSignaling {
+      constructor(configOverride = null) {
+        this.config = configOverride || firebaseConfig;
+        this.mode = "uninitialized"; // 'firebase' | 'local-loopback'
+        this.firebaseSdk = null;
+        this.app = null;
+        this.db = null;
+        this.auth = null;
+        this.authUid = null;
+        this.activeUnsubscribers = [];
+        this.broadcastChannel = null;
+        this.currentRoomId = null;
+        this.currentParticipantId = null;
+      }
+
+      isConfiguredWithRealFirebase(cfg) {
+        if (!cfg || typeof cfg !== "object") return false;
+        const apiKey = String(cfg.apiKey || "").trim();
+        const dbUrl = String(cfg.databaseURL || "").trim();
+        if (!apiKey || apiKey === "YOUR_API_KEY" || apiKey.includes("YOUR_")) return false;
+        if (!dbUrl || dbUrl === "YOUR_DATABASE_URL" || !dbUrl.startsWith("https://")) return false;
+        return true;
+      }
+
+      async initialize(customConfig = null) {
+        if (customConfig) {
+          this.config = customConfig;
+        }
+        this.cleanupListeners();
+
+        if (this.isConfiguredWithRealFirebase(this.config)) {
+          try {
+            const [appMod, dbMod, authMod] = await Promise.all([
+              import(FIREBASE_APP_URL),
+              import(FIREBASE_DB_URL),
+              import(FIREBASE_AUTH_URL)
+            ]);
+            this.firebaseSdk = { ...appMod, ...dbMod, ...authMod };
+            const existingApps = appMod.getApps ? appMod.getApps() : [];
+            this.app = existingApps.length > 0
+              ? appMod.getApp()
+              : appMod.initializeApp(this.config);
+            this.db = dbMod.getDatabase(this.app);
+
+            this.auth = authMod.getAuth(this.app);
+            const cred = await authMod.signInAnonymously(this.auth);
+            if (!cred || !cred.user || !cred.user.uid) {
+              throw new Error("Anonymous sign-in did not return an authenticated user.");
+            }
+            this.authUid = cred.user.uid;
+
+            this.mode = "firebase";
+            return { mode: "firebase", connected: true };
+          } catch (err) {
+            this.mode = "local-loopback";
+            return {
+              mode: "local-loopback",
+              connected: false,
+              error: `Firebase SDK initialization failed (${err.message || "Network/Config error"}). Using Same-Browser Multi-Tab Signaling.`
+            };
+          }
+        } else {
+          this.mode = "local-loopback";
+          return {
+            mode: "local-loopback",
+            connected: true,
+            notice: "Placeholder Firebase credentials detected. Running in Same-Browser Multi-Tab WebRTC mode until Firebase credentials are provided."
+          };
+        }
+      }
+
+      validateSignalingPayload(payload) {
+        if (!payload || typeof payload !== "object") return false;
+        if (!payload.type || !["offer", "answer", "candidate", "control"].includes(payload.type)) return false;
+        if (!payload.senderId || typeof payload.senderId !== "string") return false;
+        if (payload.type === "offer" || payload.type === "answer") {
+          return Boolean(payload.sdp && typeof payload.sdp.type === "string" && typeof payload.sdp.sdp === "string");
+        }
+        if (payload.type === "candidate") {
+          return Boolean(payload.candidate && typeof payload.candidate.candidate === "string");
+        }
+        return true;
+      }
+
+      async pruneStaleRooms() {
+        if (this.mode === "firebase") {
+          // Secure rules intentionally prohibit listing every room. Expired rooms
+          // are cleaned lazily when their exact room ID is opened again.
+          return;
+        }
+        const rooms = this._getLocalRoomsMap();
+        const now = Date.now();
+        let mutated = false;
+        Object.keys(rooms).forEach((rId) => {
+          if (rooms[rId]?.meta?.expiresAt && rooms[rId].meta.expiresAt < now) {
+            delete rooms[rId];
+            mutated = true;
+          }
+        });
+        if (mutated) this._saveLocalRoomsMap(rooms);
+      }
+
+      async createOrJoinRoom({ roomId, participant, isCreating, title, callMode }) {
+        await this.pruneStaleRooms();
+        this.currentRoomId = roomId;
+        this.currentParticipantId = participant.id;
+
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          if (!this.authUid) {
+            throw new Error("Firebase authentication is missing. Reload and sign in again.");
+          }
+          const { ref, get, set, update, remove, onDisconnect } = this.firebaseSdk;
+          const roomRef = ref(this.db, `rooms/${roomId}`);
+          const metaRef = ref(this.db, `rooms/${roomId}/meta`);
+          const participantsRef = ref(this.db, `rooms/${roomId}/participants`);
+          const now = Date.now();
+          const metaSnap = await get(metaRef);
+          let meta = metaSnap.exists() ? metaSnap.val() : null;
+
+          // A room ID may be reused only after its expiry. The rules permit
+          // deletion of expired rooms, but never arbitrary deletion by guests.
+          if (meta && Number(meta.expiresAt || 0) <= now) {
+            await remove(roomRef);
+            meta = null;
+          }
+
+          if (!meta) {
+            if (!isCreating) {
+              throw new Error("Meeting room not found or expired. Check the Meeting ID with the host.");
+            }
+            meta = {
+              roomId,
+              title: title || "PulseMeet Room",
+              mode: callMode || "video",
+              hostId: participant.id,
+              hostName: participant.name,
+              hostAuthUid: this.authUid,
+              createdAt: now,
+              expiresAt: now + ROOM_TTL_MS,
+              status: "active",
+              maxParticipants: MAX_MESH_PARTICIPANTS
+            };
+            await set(metaRef, meta);
+          } else {
+            if (isCreating) {
+              throw new Error("This meeting ID already exists. Please create a new meeting or join the existing one.");
+            }
+            if (meta.status === "ended") {
+              throw new Error("This meeting has already been ended by the host.");
+            }
+            const participantsSnap = await get(participantsRef);
+            const participantData = participantsSnap.exists() ? participantsSnap.val() : {};
+            const existingParticipants = Object.keys(participantData);
+            const thisAuthAlreadyPresent = Object.values(participantData)
+              .some((entry) => entry && entry.authUid === this.authUid);
+            if (existingParticipants.length >= MAX_MESH_PARTICIPANTS && !thisAuthAlreadyPresent) {
+              throw new Error(`Meeting is full (maximum ${MAX_MESH_PARTICIPANTS} participants in mesh mode).`);
+            }
+          }
+
+          // Host identity is tied to Firebase auth UID, not a temporary tab ID.
+          const isHost = meta.hostAuthUid === this.authUid;
+          if (isHost && meta.hostId !== participant.id) {
+            meta = { ...meta, hostId: participant.id, hostName: participant.name };
+            await update(metaRef, { hostId: participant.id, hostName: participant.name });
+          }
+
+          const participantRecord = {
+            ...participant,
+            isHost,
+            authUid: this.authUid,
+            joinedAt: now,
+            updatedAt: now
+          };
+          const partRef = ref(this.db, `rooms/${roomId}/participants/${participant.id}`);
+          const outSignalsRef = ref(this.db, `rooms/${roomId}/signals/${participant.id}`);
+
+          await set(partRef, participantRecord);
+          try {
+            await onDisconnect(partRef).remove();
+            await onDisconnect(outSignalsRef).remove();
+          } catch (_err) {
+            // Explicit leave still cleans up if onDisconnect cannot be registered.
+          }
+          return { meta, isHost };
+        }
+
+        // Local BroadcastChannel + localStorage signaling fallback for immediate multi-tab WebRTC testing
+        const rooms = this._getLocalRoomsMap();
+        const now = Date.now();
+        if (!rooms[roomId] || rooms[roomId]?.meta?.status === "ended") {
+          rooms[roomId] = {
+            meta: {
+              roomId,
+              title: title || "PulseMeet Room",
+              mode: callMode || "video",
+              hostId: participant.id,
+              hostName: participant.name,
+              createdAt: now,
+              expiresAt: now + ROOM_TTL_MS,
+              status: "active",
+              maxParticipants: MAX_MESH_PARTICIPANTS
+            },
+            participants: {}
+          };
+        }
+
+        const roomObj = rooms[roomId];
+        const partKeys = Object.keys(roomObj.participants || {});
+        if (partKeys.length >= MAX_MESH_PARTICIPANTS && !partKeys.includes(participant.id)) {
+          throw new Error(`Meeting is full (maximum ${MAX_MESH_PARTICIPANTS} participants in mesh mode).`);
+        }
+
+        const isHost = roomObj.meta.hostId === participant.id;
+        roomObj.participants[participant.id] = {
+          ...participant,
+          isHost,
+          joinedAt: now,
+          updatedAt: now
+        };
+        this._saveLocalRoomsMap(rooms);
+        return { meta: roomObj.meta, isHost };
+      }
+
+      subscribeToRoom(roomId, localParticipantId, callbacks) {
+        this.cleanupListeners();
+
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, onValue, onChildAdded, onChildChanged, onChildRemoved, remove } = this.firebaseSdk;
+
+          // 1. Room Meta Status Listener
+          const metaRef = ref(this.db, `rooms/${roomId}/meta`);
+          const unsubMeta = onValue(metaRef, (snap) => {
+            if (!snap.exists()) {
+              callbacks.onRoomEnded && callbacks.onRoomEnded("Meeting room was closed.");
+              return;
+            }
+            const meta = snap.val();
+            if (meta.status === "ended") {
+              callbacks.onRoomEnded && callbacks.onRoomEnded("The host ended the meeting for everyone.");
+            } else {
+              callbacks.onMetaUpdated && callbacks.onMetaUpdated(meta);
+            }
+          });
+
+          // 2. Participants Collection Listeners
+          const partsRef = ref(this.db, `rooms/${roomId}/participants`);
+          const unsubPartAdded = onChildAdded(partsRef, (snap) => {
+            if (!snap.exists()) return;
+            const p = snap.val();
+            if (p && p.id) callbacks.onParticipantJoined && callbacks.onParticipantJoined(p);
+          });
+
+          const unsubPartChanged = onChildChanged(partsRef, (snap) => {
+            if (!snap.exists()) return;
+            const p = snap.val();
+            if (p && p.id) callbacks.onParticipantUpdated && callbacks.onParticipantUpdated(p);
+          });
+
+          const unsubPartRemoved = onChildRemoved(partsRef, (snap) => {
+            if (!snap.exists()) return;
+            const p = snap.val();
+            if (p && p.id) callbacks.onParticipantLeft && callbacks.onParticipantLeft(p.id);
+          });
+
+          // 3. Pairwise Signaling Listener: rooms/{roomId}/signals/{localParticipantId}/{remoteSenderId}
+          const inboxRef = ref(this.db, `rooms/${roomId}/signals/${localParticipantId}`);
+          const handleSignalEnvelope = async (snap) => {
+            if (!snap.exists()) return;
+            const remoteSenderId = snap.key;
+            const messagesMap = snap.val();
+            if (!messagesMap || typeof messagesMap !== "object") return;
+
+            const msgKeys = Object.keys(messagesMap).sort();
+            for (const msgKey of msgKeys) {
+              const payload = messagesMap[msgKey];
+              if (this.validateSignalingPayload(payload)) {
+                await callbacks.onSignalMessage(remoteSenderId, payload);
+              }
+              // Remove consumed signaling message immediately to keep database clean
+              try {
+                await remove(ref(this.db, `rooms/${roomId}/signals/${localParticipantId}/${remoteSenderId}/${msgKey}`));
+              } catch (_err) {
+                // Ignore
+              }
+            }
+          };
+
+          const unsubSigAdded = onChildAdded(inboxRef, handleSignalEnvelope);
+          const unsubSigChanged = onChildChanged(inboxRef, handleSignalEnvelope);
+
+          this.activeUnsubscribers.push(
+            unsubMeta,
+            unsubPartAdded,
+            unsubPartChanged,
+            unsubPartRemoved,
+            unsubSigAdded,
+            unsubSigChanged
+          );
+          return;
+        }
+
+        // Local BroadcastChannel fallback for multi-tab WebRTC testing
+        if ("BroadcastChannel" in window) {
+          this.broadcastChannel = new BroadcastChannel(`pulsemeet_room_${roomId}`);
+          this.broadcastChannel.onmessage = async (event) => {
+            const data = event.data;
+            if (!data || typeof data !== "object") return;
+
+            if (data.kind === "participant-join") {
+              callbacks.onParticipantJoined && callbacks.onParticipantJoined(data.participant);
+            } else if (data.kind === "participant-update") {
+              callbacks.onParticipantUpdated && callbacks.onParticipantUpdated(data.participant);
+            } else if (data.kind === "participant-leave") {
+              callbacks.onParticipantLeft && callbacks.onParticipantLeft(data.participantId);
+            } else if (data.kind === "room-ended") {
+              callbacks.onRoomEnded && callbacks.onRoomEnded(data.reason || "The host ended the meeting.");
+            } else if (data.kind === "meta-update") {
+              callbacks.onMetaUpdated && callbacks.onMetaUpdated(data.meta);
+            } else if (data.kind === "signal" && data.targetId === localParticipantId) {
+              if (this.validateSignalingPayload(data.payload)) {
+                await callbacks.onSignalMessage(data.senderId, data.payload);
+              }
+            }
+          };
+        }
+
+        // Emit existing participants in the room
+        const rooms = this._getLocalRoomsMap();
+        const roomObj = rooms[roomId];
+        if (roomObj && roomObj.participants) {
+          Object.values(roomObj.participants).forEach((p) => {
+            callbacks.onParticipantJoined && callbacks.onParticipantJoined(p);
+          });
+          if (this.broadcastChannel && roomObj.participants[localParticipantId]) {
+            this.broadcastChannel.postMessage({
+              kind: "participant-join",
+              participant: roomObj.participants[localParticipantId]
+            });
+          }
+        }
+      }
+
+      async sendSignal(roomId, senderId, targetId, payload) {
+        const message = {
+          ...payload,
+          senderId,
+          targetId,
+          timestamp: Date.now()
+        };
+        if (!this.validateSignalingPayload(message)) {
+          return;
+        }
+
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, push, set } = this.firebaseSdk;
+          const targetSignalListRef = ref(this.db, `rooms/${roomId}/signals/${targetId}/${senderId}`);
+          const newMsgRef = push(targetSignalListRef);
+          await set(newMsgRef, message);
+          return;
+        }
+
+        if (this.broadcastChannel) {
+          this.broadcastChannel.postMessage({
+            kind: "signal",
+            senderId,
+            targetId,
+            payload: message
+          });
+        }
+      }
+
+      async updateParticipantState(roomId, participantId, partialState) {
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, update } = this.firebaseSdk;
+          await update(ref(this.db, `rooms/${roomId}/participants/${participantId}`), {
+            ...partialState,
+            updatedAt: Date.now()
+          });
+          return;
+        }
+
+        const rooms = this._getLocalRoomsMap();
+        if (rooms[roomId]?.participants?.[participantId]) {
+          rooms[roomId].participants[participantId] = {
+            ...rooms[roomId].participants[participantId],
+            ...partialState,
+            updatedAt: Date.now()
+          };
+          this._saveLocalRoomsMap(rooms);
+          if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({
+              kind: "participant-update",
+              participant: rooms[roomId].participants[participantId]
+            });
+          }
+        }
+      }
+
+      async transferHostRole(roomId, newHostId, newHostName) {
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, get, update } = this.firebaseSdk;
+          const targetRef = ref(this.db, `rooms/${roomId}/participants/${newHostId}`);
+          const targetSnap = await get(targetRef);
+          if (!targetSnap.exists()) throw new Error("The selected participant is no longer in this meeting.");
+          const target = targetSnap.val();
+          if (!target.authUid) throw new Error("The selected participant has no authenticated session.");
+          await update(ref(this.db, `rooms/${roomId}/meta`), {
+            hostId: newHostId,
+            hostName: newHostName,
+            hostAuthUid: target.authUid
+          });
+          return;
+        }
+        const rooms = this._getLocalRoomsMap();
+        if (rooms[roomId]?.meta) {
+          rooms[roomId].meta.hostId = newHostId;
+          rooms[roomId].meta.hostName = newHostName;
+          this._saveLocalRoomsMap(rooms);
+          if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({
+              kind: "meta-update",
+              meta: rooms[roomId].meta
+            });
+          }
+        }
+      }
+
+      async removeParticipantFromRoom(roomId, targetParticipantId) {
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, remove } = this.firebaseSdk;
+          await remove(ref(this.db, `rooms/${roomId}/participants/${targetParticipantId}`));
+          await remove(ref(this.db, `rooms/${roomId}/signals/${targetParticipantId}`));
+          return;
+        }
+        const rooms = this._getLocalRoomsMap();
+        if (rooms[roomId]?.participants?.[targetParticipantId]) {
+          delete rooms[roomId].participants[targetParticipantId];
+          this._saveLocalRoomsMap(rooms);
+          if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({
+              kind: "participant-leave",
+              participantId: targetParticipantId
+            });
+          }
+        }
+      }
+
+      async leaveRoom(roomId, participantId) {
+        if (!roomId || !participantId) return;
+
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          try {
+            const { ref, remove, get } = this.firebaseSdk;
+            // Delete the participant's inbox before deleting the participant record;
+            // inbox deletion is authorized against that record's authUid.
+            await remove(ref(this.db, `rooms/${roomId}/signals/${participantId}`));
+            await remove(ref(this.db, `rooms/${roomId}/participants/${participantId}`));
+
+            // If last participant left, remove room to prevent stale signaling data
+            const remainingSnap = await get(ref(this.db, `rooms/${roomId}/participants`));
+            if (!remainingSnap.exists()) {
+              await remove(ref(this.db, `rooms/${roomId}`));
+            }
+          } catch (_err) {
+            // Ignore cleanup errors on unload
+          }
+        } else {
+          const rooms = this._getLocalRoomsMap();
+          if (rooms[roomId]?.participants) {
+            delete rooms[roomId].participants[participantId];
+            if (Object.keys(rooms[roomId].participants).length === 0) {
+              delete rooms[roomId];
+            }
+            this._saveLocalRoomsMap(rooms);
+          }
+          if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({
+              kind: "participant-leave",
+              participantId
+            });
+          }
+        }
+        this.cleanupListeners();
+      }
+
+      async endRoomForEveryone(roomId) {
+        if (!roomId) return;
+        if (this.mode === "firebase" && this.db && this.firebaseSdk) {
+          const { ref, update, remove } = this.firebaseSdk;
+          await update(ref(this.db, `rooms/${roomId}/meta`), {
+            status: "ended",
+            endedAt: Date.now()
+          });
+          await remove(ref(this.db, `rooms/${roomId}`));
+        } else {
+          const rooms = this._getLocalRoomsMap();
+          delete rooms[roomId];
+          this._saveLocalRoomsMap(rooms);
+          if (this.broadcastChannel) {
+            this.broadcastChannel.postMessage({
+              kind: "room-ended",
+              reason: "The host ended the meeting for everyone."
+            });
+          }
+        }
+        this.cleanupListeners();
+      }
+
+      cleanupListeners() {
+        while (this.activeUnsubscribers.length > 0) {
+          const unsub = this.activeUnsubscribers.pop();
+          try {
+            if (typeof unsub === "function") unsub();
+          } catch (_err) {
+            // Ignore
+          }
+        }
+        if (this.broadcastChannel) {
+          try {
+            this.broadcastChannel.close();
+          } catch (_err) {
+            // Ignore
+          }
+          this.broadcastChannel = null;
+        }
+      }
+
+      _getLocalRoomsMap() {
+        try {
+          const raw = window.localStorage.getItem("pulsemeet_v1_local_rooms");
+          return raw ? JSON.parse(raw) : {};
+        } catch (_err) {
+          return {};
+        }
+      }
+
+      _saveLocalRoomsMap(map) {
+        try {
+          window.localStorage.setItem("pulsemeet_v1_local_rooms", JSON.stringify(map));
+        } catch (_err) {
+          // Ignore
+        }
+      }
+    }
+
+    /* ========================================================================
+       MODULE 3: MediaManager
+       Manages getUserMedia(), getDisplayMedia(), device enumeration, hardware
+       hot-plugging, adaptive constraints, and Web Audio API speaker level meters.
+       ======================================================================== */
+    class MediaManager {
+      constructor() {
+        this.localStream = null;
+        this.cameraTrack = null;
+        this.audioTrack = null;
+        this.screenStream = null;
+        this.screenTrack = null;
+        this.isScreenSharing = false;
+        this.micEnabled = true;
+        this.camEnabled = true;
+        this.callMode = "video"; // 'video' | 'voice'
+        this.audioContext = null;
+        this.analysers = new Map();
+        this.levelMonitorInterval = null;
+      }
+
+      isSecureContextAvailable() {
+        return Boolean(
+          window.isSecureContext ||
+          window.location.protocol === "https:" ||
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"
+        );
+      }
+
+      isWebRTCSupported() {
+        return Boolean(window.RTCPeerConnection && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+      }
+
+      isScreenShareSupported() {
+        return Boolean(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === "function");
+      }
+
+      async enumerateMediaDevices() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+          return { microphones: [], cameras: [] };
+        }
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          return {
+            microphones: devices.filter((d) => d.kind === "audioinput"),
+            cameras: devices.filter((d) => d.kind === "videoinput")
+          };
+        } catch (_err) {
+          return { microphones: [], cameras: [] };
+        }
+      }
+
+      getAdaptiveVideoConstraints(deviceId = "") {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+        const base = {
+          width: { ideal: isMobile ? 640 : 1280, max: 1280 },
+          height: { ideal: isMobile ? 360 : 720, max: 720 },
+          frameRate: { ideal: isMobile ? 24 : 30, max: 30 },
+          facingMode: "user"
+        };
+        if (deviceId) {
+          base.deviceId = { exact: deviceId };
+        }
+        return base;
+      }
+
+      getAudioConstraints(deviceId = "") {
+        const base = {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        };
+        if (deviceId) {
+          base.deviceId = { exact: deviceId };
+        }
+        return base;
+      }
+
+      async acquireMediaStream({ mode = "video", wantMic = true, wantCam = true, micDeviceId = "", camDeviceId = "" }) {
+        this.stopAllLocalMedia();
+        this.callMode = mode;
+        const effectiveWantCam = mode === "voice" ? false : wantCam;
+
+        const stream = new MediaStream();
+        let micError = null;
+        let camError = null;
+
+        // Acquire Audio Track
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: this.getAudioConstraints(micDeviceId),
+            video: false
+          });
+          const aTrack = audioStream.getAudioTracks()[0];
+          if (aTrack) {
+            aTrack.enabled = Boolean(wantMic);
+            this.audioTrack = aTrack;
+            stream.addTrack(aTrack);
+          }
+        } catch (err) {
+          micError = this.translateMediaError(err, "Microphone");
+        }
+
+        // Acquire Video Track (only when in video mode)
+        if (mode === "video") {
+          try {
+            const videoStream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: this.getAdaptiveVideoConstraints(camDeviceId)
+            });
+            const vTrack = videoStream.getVideoTracks()[0];
+            if (vTrack) {
+              vTrack.enabled = Boolean(effectiveWantCam);
+              this.cameraTrack = vTrack;
+              stream.addTrack(vTrack);
+            }
+          } catch (err) {
+            camError = this.translateMediaError(err, "Camera");
+          }
+        }
+
+        this.localStream = stream;
+        this.micEnabled = Boolean(this.audioTrack && this.audioTrack.enabled);
+        this.camEnabled = Boolean(this.cameraTrack && this.cameraTrack.enabled && mode === "video");
+
+        return {
+          stream,
+          hasAudio: Boolean(this.audioTrack),
+          hasVideo: Boolean(this.cameraTrack),
+          micEnabled: this.micEnabled,
+          camEnabled: this.camEnabled,
+          micError,
+          camError
+        };
+      }
+
+      async toggleMicrophone(forceState = null) {
+        const target = forceState !== null ? Boolean(forceState) : !this.micEnabled;
+        if (this.audioTrack && this.audioTrack.readyState === "live") {
+          this.audioTrack.enabled = target;
+          this.micEnabled = target;
+          return { enabled: this.micEnabled };
+        }
+
+        if (target) {
+          try {
+            const s = await navigator.mediaDevices.getUserMedia({
+              audio: this.getAudioConstraints(),
+              video: false
+            });
+            this.audioTrack = s.getAudioTracks()[0];
+            if (this.localStream && this.audioTrack) {
+              this.localStream.addTrack(this.audioTrack);
+            }
+            this.micEnabled = true;
+            return { enabled: true, newTrack: this.audioTrack };
+          } catch (err) {
+            this.micEnabled = false;
+            return { enabled: false, error: this.translateMediaError(err, "Microphone") };
+          }
+        }
+
+        this.micEnabled = false;
+        return { enabled: false };
+      }
+
+      async toggleCamera(forceState = null, camDeviceId = "") {
+        if (this.callMode === "voice") {
+          return { enabled: false, error: "Camera is disabled in dedicated Voice-Only Mode." };
+        }
+
+        const target = forceState !== null ? Boolean(forceState) : !this.camEnabled;
+        if (this.cameraTrack && this.cameraTrack.readyState === "live") {
+          this.cameraTrack.enabled = target;
+          this.camEnabled = target;
+          return { enabled: this.camEnabled, track: this.cameraTrack };
+        }
+
+        if (target) {
+          try {
+            const s = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: this.getAdaptiveVideoConstraints(camDeviceId)
+            });
+            this.cameraTrack = s.getVideoTracks()[0];
+            if (this.localStream && this.cameraTrack) {
+              this.localStream.getVideoTracks().forEach((old) => this.localStream.removeTrack(old));
+              this.localStream.addTrack(this.cameraTrack);
+            }
+            this.camEnabled = true;
+            return { enabled: true, track: this.cameraTrack, isNewTrack: true };
+          } catch (err) {
+            this.camEnabled = false;
+            return { enabled: false, error: this.translateMediaError(err, "Camera") };
+          }
+        }
+
+        this.camEnabled = false;
+        return { enabled: false };
+      }
+
+      async startScreenShare(onNativeEndedCallback) {
+        if (!this.isScreenShareSupported()) {
+          throw new Error("Screen sharing is not supported by this browser or mobile device.");
+        }
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always", maxWidth: 1920, maxHeight: 1080, frameRate: { ideal: 24, max: 30 } },
+          audio: false
+        });
+        const sTrack = displayStream.getVideoTracks()[0];
+        if (!sTrack) {
+          throw new Error("No video track was returned from screen selection.");
+        }
+
+        this.screenStream = displayStream;
+        this.screenTrack = sTrack;
+        this.isScreenSharing = true;
+
+        sTrack.onended = () => {
+          this.stopScreenShare();
+          if (typeof onNativeEndedCallback === "function") {
+            onNativeEndedCallback();
+          }
+        };
+
+        return sTrack;
+      }
+
+      stopScreenShare() {
+        if (this.screenTrack) {
+          try {
+            this.screenTrack.onended = null;
+            this.screenTrack.stop();
+          } catch (_err) {
+            // Ignore
+          }
+        }
+        if (this.screenStream) {
+          this.screenStream.getTracks().forEach((t) => t.stop());
+        }
+        this.screenTrack = null;
+        this.screenStream = null;
+        this.isScreenSharing = false;
+        return this.cameraTrack;
+      }
+
+      getActiveVideoTrack() {
+        if (this.isScreenSharing && this.screenTrack && this.screenTrack.readyState === "live") {
+          return this.screenTrack;
+        }
+        if (this.camEnabled && this.cameraTrack && this.cameraTrack.readyState === "live") {
+          return this.cameraTrack;
+        }
+        return null;
+      }
+
+      monitorStreamAudioLevel(id, stream, onLevelChange) {
+        if (!stream || stream.getAudioTracks().length === 0) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+
+        try {
+          if (!this.audioContext) {
+            this.audioContext = new AudioCtx();
+          }
+          if (this.audioContext.state === "suspended") {
+            this.audioContext.resume().catch(() => {});
+          }
+          const source = this.audioContext.createMediaStreamSource(stream);
+          const analyser = this.audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.65;
+          source.connect(analyser);
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          this.analysers.set(id, { source, analyser, dataArray, onLevelChange });
+
+          if (!this.levelMonitorInterval) {
+            this.levelMonitorInterval = window.setInterval(() => {
+              this.analysers.forEach((entry, participantKey) => {
+                entry.analyser.getByteFrequencyData(entry.dataArray);
+                let sum = 0;
+                for (let i = 0; i < entry.dataArray.length; i++) {
+                  sum += entry.dataArray[i];
+                }
+                const avg = sum / entry.dataArray.length;
+                const normalized = Math.min(100, Math.round((avg / 95) * 100));
+                if (typeof entry.onLevelChange === "function") {
+                  entry.onLevelChange(normalized, normalized > 14, participantKey);
+                }
+              });
+            }, 140);
+          }
+        } catch (_err) {
+          // Ignore Web Audio analyser errors
+        }
+      }
+
+      removeStreamAudioMonitor(id) {
+        const entry = this.analysers.get(id);
+        if (entry) {
+          try {
+            entry.source.disconnect();
+          } catch (_err) {
+            // Ignore
+          }
+          this.analysers.delete(id);
+        }
+        if (this.analysers.size === 0 && this.levelMonitorInterval) {
+          window.clearInterval(this.levelMonitorInterval);
+          this.levelMonitorInterval = null;
+        }
+      }
+
+      stopAllLocalMedia() {
+        this.stopScreenShare();
+        if (this.localStream) {
+          this.localStream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch (_err) {
+              // Ignore
+            }
+          });
+        }
+        if (this.audioTrack) {
+          try { this.audioTrack.stop(); } catch (_e) {}
+        }
+        if (this.cameraTrack) {
+          try { this.cameraTrack.stop(); } catch (_e) {}
+        }
+        this.localStream = null;
+        this.audioTrack = null;
+        this.cameraTrack = null;
+        this.analysers.forEach((_, key) => this.removeStreamAudioMonitor(key));
+      }
+
+      translateMediaError(err, deviceLabel) {
+        if (!err) return `${deviceLabel} could not be accessed.`;
+        const name = err.name || "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          return `${deviceLabel} permission was denied. Allow access in your browser address bar settings or continue in Voice-Only mode.`;
+        }
+        if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+          return `No ${deviceLabel.toLowerCase()} hardware was detected on this device.`;
+        }
+        if (name === "NotReadableError" || name === "TrackStartError") {
+          return `${deviceLabel} is currently in use by another application.`;
+        }
+        if (name === "OverconstrainedError") {
+          return `The selected ${deviceLabel.toLowerCase()} does not support the requested constraints.`;
+        }
+        return `${deviceLabel} error: ${err.message || name || "Unavailable"}`;
+      }
+    }
+
+    /* ========================================================================
+       MODULE 4: WebRTCManager
+       Manages mesh RTCPeerConnection instances using the WebRTC Perfect
+       Negotiation pattern, ICE candidate queuing, track replacement for screen
+       sharing, and bounded ICE restarts on transient network drops.
+       ======================================================================== */
+    class WebRTCManager {
+      constructor({ signaling, mediaManager, iceServers, onRemoteStream, onPeerStateChange }) {
+        this.signaling = signaling;
+        this.mediaManager = mediaManager;
+        this.iceServers = iceServers || DEFAULT_ICE_SERVERS;
+        this.onRemoteStream = onRemoteStream;
+        this.onPeerStateChange = onPeerStateChange;
+        this.peers = new Map(); // remoteId -> peerContext
+        this.roomId = null;
+        this.localParticipantId = null;
+      }
+
+      configureSession(roomId, localParticipantId, customIceServers = null) {
+        this.roomId = roomId;
+        this.localParticipantId = localParticipantId;
+        if (Array.isArray(customIceServers) && customIceServers.length > 0) {
+          this.iceServers = customIceServers;
+        }
+      }
+
+      isPolitePeer(remoteId) {
+        return String(this.localParticipantId) < String(remoteId);
+      }
+
+      ensurePeerConnection(remoteId, initiateIfImpolite = false) {
+        if (!remoteId || remoteId === this.localParticipantId) return null;
+        if (this.peers.has(remoteId)) {
+          return this.peers.get(remoteId);
+        }
+
+        const pc = new RTCPeerConnection({
+          iceServers: this.iceServers,
+          iceCandidatePoolSize: 8
+        });
+
+        const context = {
+          remoteId,
+          pc,
+          polite: this.isPolitePeer(remoteId),
+          makingOffer: false,
+          ignoreOffer: false,
+          isSettingRemoteAnswerPending: false,
+          pendingCandidates: [],
+          remoteStream: new MediaStream(),
+          restartAttempts: 0,
+          connectionTimer: null,
+          audioSender: null,
+          videoSender: null
+        };
+
+        // Attach local audio & video tracks (or transceivers so mid-call track replacement always works)
+        const audioTrack = this.mediaManager.audioTrack;
+        if (audioTrack) {
+          context.audioSender = pc.addTrack(audioTrack, this.mediaManager.localStream || new MediaStream([audioTrack]));
+        } else {
+          const audioTransceiver = pc.addTransceiver("audio", { direction: "sendrecv" });
+          context.audioSender = audioTransceiver.sender;
+        }
+
+        if (this.mediaManager.callMode === "video") {
+          const activeVideoTrack = this.mediaManager.getActiveVideoTrack() || this.mediaManager.cameraTrack;
+          if (activeVideoTrack) {
+            context.videoSender = pc.addTrack(activeVideoTrack, this.mediaManager.localStream || new MediaStream([activeVideoTrack]));
+          } else {
+            const videoTransceiver = pc.addTransceiver("video", { direction: "sendrecv" });
+            context.videoSender = videoTransceiver.sender;
+          }
+        }
+
+        // Handle incoming remote tracks
+        pc.ontrack = (event) => {
+          if (event.streams && event.streams[0]) {
+            event.streams[0].getTracks().forEach((t) => {
+              if (!context.remoteStream.getTracks().some((existing) => existing.id === t.id)) {
+                context.remoteStream.addTrack(t);
+              }
+            });
+          } else if (event.track) {
+            context.remoteStream.addTrack(event.track);
+          }
+          if (typeof this.onRemoteStream === "function") {
+            this.onRemoteStream(remoteId, context.remoteStream);
+          }
+        };
+
+        // Handle local ICE candidate discovery
+        pc.onicecandidate = ({ candidate }) => {
+          if (candidate && this.roomId) {
+            this.signaling.sendSignal(this.roomId, this.localParticipantId, remoteId, {
+              type: "candidate",
+              candidate: candidate.toJSON ? candidate.toJSON() : {
+                candidate: candidate.candidate,
+                sdpMid: candidate.sdpMid,
+                sdpMLineIndex: candidate.sdpMLineIndex
+              }
+            });
+          }
+        };
+
+        // Perfect Negotiation: Handle negotiationneeded
+        // Use a deterministic single-offerer rule for each peer pair.
+        // The polite peer waits; only the impolite peer starts negotiation.
+        // This prevents both browsers creating offers simultaneously (offer glare).
+        pc.onnegotiationneeded = async () => {
+          if (context.polite || context.makingOffer || pc.signalingState !== "stable") return;
+          try {
+            context.makingOffer = true;
+            const offer = await pc.createOffer();
+            if (pc.signalingState !== "stable") return;
+            await pc.setLocalDescription(offer);
+            await this.signaling.sendSignal(this.roomId, this.localParticipantId, remoteId, {
+              type: "offer",
+              sdp: {
+                type: pc.localDescription.type,
+                sdp: pc.localDescription.sdp
+              }
+            });
+          } catch (err) {
+            console.error("[PulseMeet] Offer negotiation failed:", remoteId, err);
+            if (typeof this.onPeerStateChange === "function") {
+              this.onPeerStateChange(remoteId, "Failed");
+            }
+          } finally {
+            context.makingOffer = false;
+          }
+        };
+
+        // Connection & ICE state monitoring with bounded automatic reconnection
+        const evaluateState = () => {
+          const iceState = pc.iceConnectionState;
+          const connState = pc.connectionState || iceState;
+          let mapped = "Connecting";
+
+          if (connState === "connected" || iceState === "connected" || iceState === "completed") {
+            mapped = "Connected";
+            context.restartAttempts = 0;
+            if (context.connectionTimer) {
+              window.clearTimeout(context.connectionTimer);
+              context.connectionTimer = null;
+            }
+          } else if (iceState === "disconnected" || connState === "disconnected") {
+            mapped = "Reconnecting";
+            this.attemptBoundedIceRestart(context);
+          } else if (iceState === "failed" || connState === "failed") {
+            if (context.restartAttempts < MAX_ICE_RESTART_ATTEMPTS) {
+              mapped = "Reconnecting";
+              this.attemptBoundedIceRestart(context);
+            } else {
+              mapped = "Failed";
+            }
+          } else if (connState === "closed" || iceState === "closed") {
+            mapped = "Disconnected";
+          }
+
+          if (typeof this.onPeerStateChange === "function") {
+            this.onPeerStateChange(remoteId, mapped);
+          }
+        };
+
+        pc.oniceconnectionstatechange = evaluateState;
+        pc.onconnectionstatechange = evaluateState;
+
+        // Connection timeout guard
+        context.connectionTimer = window.setTimeout(() => {
+          if (pc.connectionState !== "connected" && pc.iceConnectionState !== "connected" && pc.iceConnectionState !== "completed") {
+            this.attemptBoundedIceRestart(context);
+          }
+        }, PEER_CONNECTION_TIMEOUT_MS);
+
+        this.peers.set(remoteId, context);
+        if (typeof this.onPeerStateChange === "function") {
+          this.onPeerStateChange(remoteId, "Connecting");
+        }
+
+        // Impolite peer kicks off initial offer deterministically if not already triggered
+        if (initiateIfImpolite && !context.polite) {
+          this.triggerInitialOffer(context);
+        }
+
+        return context;
+      }
+
+      async triggerInitialOffer(context) {
+        const { pc, remoteId } = context;
+        if (context.polite || context.makingOffer || pc.signalingState !== "stable") return;
+        try {
+          context.makingOffer = true;
+          const offer = await pc.createOffer();
+          if (pc.signalingState !== "stable") return;
+          await pc.setLocalDescription(offer);
+          await this.signaling.sendSignal(this.roomId, this.localParticipantId, remoteId, {
+            type: "offer",
+            sdp: {
+              type: pc.localDescription.type,
+              sdp: pc.localDescription.sdp
+            }
+          });
+        } catch (_err) {
+          // Ignore
+        } finally {
+          context.makingOffer = false;
+        }
+      }
+
+      async attemptBoundedIceRestart(context) {
+        if (!context || !context.pc) return;
+        if (context.restartAttempts >= MAX_ICE_RESTART_ATTEMPTS) {
+          if (typeof this.onPeerStateChange === "function") {
+            this.onPeerStateChange(context.remoteId, "Failed");
+          }
+          return;
+        }
+        context.restartAttempts += 1;
+        const backoffMs = 800 * context.restartAttempts;
+        window.setTimeout(async () => {
+          const { pc, remoteId } = context;
+          if (!this.peers.has(remoteId) || pc.signalingState === "closed") return;
+          if (pc.connectionState === "connected" || pc.iceConnectionState === "connected") return;
+          try {
+            if (typeof pc.restartIce === "function") {
+              pc.restartIce();
+            }
+            const offer = await pc.createOffer({ iceRestart: true });
+            if (pc.signalingState === "stable") {
+              await pc.setLocalDescription(offer);
+              await this.signaling.sendSignal(this.roomId, this.localParticipantId, remoteId, {
+                type: "offer",
+                sdp: {
+                  type: pc.localDescription.type,
+                  sdp: pc.localDescription.sdp
+                }
+              });
+            }
+          } catch (_err) {
+            // Bounded retry exhausted on next cycle
+          }
+        }, backoffMs);
+      }
+
+      async handleIncomingSignal(remoteId, payload) {
+        if (!remoteId || remoteId === this.localParticipantId) return;
+        const context = this.ensurePeerConnection(remoteId, false);
+        if (!context) return;
+        const { pc } = context;
+
+        try {
+          if (payload.type === "offer" || payload.type === "answer") {
+            const description = new RTCSessionDescription(payload.sdp);
+            const readyForOffer =
+              !context.makingOffer &&
+              (pc.signalingState === "stable" || context.isSettingRemoteAnswerPending);
+            const offerCollision = description.type === "offer" && !readyForOffer;
+
+            context.ignoreOffer = !context.polite && offerCollision;
+            if (context.ignoreOffer) {
+              return;
+            }
+
+            context.isSettingRemoteAnswerPending = description.type === "answer";
+            if (offerCollision && context.polite) {
+              await Promise.all([
+                pc.setLocalDescription({ type: "rollback" }),
+                pc.setRemoteDescription(description)
+              ]);
+            } else {
+              await pc.setRemoteDescription(description);
+            }
+            context.isSettingRemoteAnswerPending = false;
+
+            // Flush any queued ICE candidates that arrived before remoteDescription
+            while (context.pendingCandidates.length > 0) {
+              const queued = context.pendingCandidates.shift();
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(queued));
+              } catch (_err) {
+                // Ignore stale candidate
+              }
+            }
+
+            if (description.type === "offer") {
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await this.signaling.sendSignal(this.roomId, this.localParticipantId, remoteId, {
+                type: "answer",
+                sdp: {
+                  type: pc.localDescription.type,
+                  sdp: pc.localDescription.sdp
+                }
+              });
+            }
+          } else if (payload.type === "candidate" && payload.candidate) {
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              } catch (_err) {
+                if (!context.ignoreOffer) {
+                  // Ignore benign candidate race
+                }
+              }
+            } else {
+              context.pendingCandidates.push(payload.candidate);
+            }
+          }
+        } catch (err) {
+          context.isSettingRemoteAnswerPending = false;
+          console.error("[PulseMeet] Incoming WebRTC signal failed:", {
+            remoteId,
+            signalType: payload && payload.type,
+            signalingState: pc.signalingState,
+            iceConnectionState: pc.iceConnectionState,
+            error: err
+          });
+          if (typeof this.onPeerStateChange === "function") {
+            this.onPeerStateChange(remoteId, "Failed");
+          }
+        }
+      }
+
+      async replaceOutgoingVideoTrack(newVideoTrack) {
+        const promises = [];
+        this.peers.forEach((context) => {
+          if (context.videoSender) {
+            promises.push(context.videoSender.replaceTrack(newVideoTrack || null));
+          }
+        });
+        await Promise.allSettled(promises);
+      }
+
+      async replaceOutgoingAudioTrack(newAudioTrack) {
+        const promises = [];
+        this.peers.forEach((context) => {
+          if (context.audioSender) {
+            promises.push(context.audioSender.replaceTrack(newAudioTrack || null));
+          }
+        });
+        await Promise.allSettled(promises);
+      }
+
+      closePeer(remoteId) {
+        const context = this.peers.get(remoteId);
+        if (!context) return;
+        if (context.connectionTimer) {
+          window.clearTimeout(context.connectionTimer);
+        }
+        try {
+          context.pc.ontrack = null;
+          context.pc.onicecandidate = null;
+          context.pc.onnegotiationneeded = null;
+          context.pc.oniceconnectionstatechange = null;
+          context.pc.onconnectionstatechange = null;
+          context.pc.close();
+        } catch (_err) {
+          // Ignore
+        }
+        this.peers.delete(remoteId);
+      }
+
+      closeAllPeers() {
+        Array.from(this.peers.keys()).forEach((remoteId) => this.closePeer(remoteId));
+        this.peers.clear();
+      }
+    }
+
+    /* ========================================================================
+       MODULE 5: ParticipantManager
+       Maintains authoritative in-memory state of all local and remote
+       participants, connection states, speaking states, and host permissions.
+       ======================================================================== */
+    class ParticipantManager {
+      constructor() {
+        this.participants = new Map();
+        this.localId = null;
+      }
+
+      setLocalParticipant(participant) {
+        this.localId = participant.id;
+        this.participants.set(participant.id, {
+          ...participant,
+          isLocal: true,
+          connectionState: "Connected",
+          isSpeaking: false
+        });
+      }
+
+      upsertParticipant(participant) {
+        if (!participant || !participant.id) return null;
+        const existing = this.participants.get(participant.id) || {};
+        const merged = {
+          ...existing,
+          ...participant,
+          isLocal: participant.id === this.localId,
+          connectionState: participant.id === this.localId
+            ? "Connected"
+            : (existing.connectionState || "Connecting"),
+          isSpeaking: Boolean(existing.isSpeaking)
+        };
+        this.participants.set(participant.id, merged);
+        return merged;
+      }
+
+      updateConnectionState(participantId, connectionState) {
+        const existing = this.participants.get(participantId);
+        if (!existing) return null;
+        existing.connectionState = connectionState;
+        return existing;
+      }
+
+      updateSpeakingState(participantId, isSpeaking) {
+        const existing = this.participants.get(participantId);
+        if (!existing) return false;
+        const effectiveSpeaking = existing.micEnabled ? Boolean(isSpeaking) : false;
+        if (existing.isSpeaking === effectiveSpeaking) return false;
+        existing.isSpeaking = effectiveSpeaking;
+        return true;
+      }
+
+      removeParticipant(participantId) {
+        return this.participants.delete(participantId);
+      }
+
+      getParticipant(participantId) {
+        return this.participants.get(participantId) || null;
+      }
+
+      getAllParticipants() {
+        return Array.from(this.participants.values()).sort((a, b) => {
+          if (a.isLocal) return -1;
+          if (b.isLocal) return 1;
+          if (a.isHost && !b.isHost) return -1;
+          if (!a.isHost && b.isHost) return 1;
+          return (a.joinedAt || 0) - (b.joinedAt || 0);
+        });
+      }
+
+      clear() {
+        this.participants.clear();
+        this.localId = null;
+      }
+    }
+
+    /* ========================================================================
+       MODULE 6: RoomManager
+       Generates cryptographically random room identifiers, validates room IDs,
+       parses URL parameters, and formats shareable meeting invitations.
+       ======================================================================== */
+    class RoomManager {
+      generateRoomId() {
+        const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+        const bytes = new Uint8Array(10);
+        if (window.crypto && window.crypto.getRandomValues) {
+          window.crypto.getRandomValues(bytes);
+        } else {
+          for (let i = 0; i < 10; i++) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
+        return `${chars.slice(0, 3).join("")}-${chars.slice(3, 7).join("")}-${chars.slice(7, 10).join("")}`;
+      }
+
+      generateParticipantId() {
+        const bytes = new Uint8Array(8);
+        if (window.crypto && window.crypto.getRandomValues) {
+          window.crypto.getRandomValues(bytes);
+        } else {
+          for (let i = 0; i < 8; i++) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        return "p_" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+      }
+
+      normalizeRoomId(input) {
+        if (!input || typeof input !== "string") return "";
+        const trimmed = input.trim().toLowerCase();
+        // Extract room query param if user pasted a full invitation URL
+        try {
+          if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            const url = new URL(trimmed);
+            const fromParam = url.searchParams.get("room");
+            if (fromParam) return fromParam.replace(/[^a-z0-9-]/g, "");
+          }
+        } catch (_err) {
+          // Treat as raw room ID
+        }
+        return trimmed.replace(/[^a-z0-9-]/g, "").slice(0, 32);
+      }
+
+      isValidRoomId(roomId) {
+        if (!roomId || typeof roomId !== "string") return false;
+        return /^[a-z0-9]{2,12}(-[a-z0-9]{2,12}){1,3}$/.test(roomId) || /^[a-z0-9-]{5,32}$/.test(roomId);
+      }
+
+      buildShareableUrl(roomId, mode = "video", title = "") {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("room", roomId);
+          url.searchParams.set("mode", mode);
+          if (title) url.searchParams.set("title", title);
+          return url.toString();
+        } catch (_err) {
+          return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomId)}&mode=${encodeURIComponent(mode)}`;
+        }
+      }
+
+      buildInvitationText({ roomId, title, hostName, mode }) {
+        const link = this.buildShareableUrl(roomId, mode, title);
+        return [
+          `You are invited to join a PulseMeet ${mode === "voice" ? "Voice-Only" : "Video"} Meeting`,
+          `Topic: ${title || "PulseMeet Real-Time Session"}`,
+          `Host: ${hostName || "Meeting Host"}`,
+          `Meeting ID: ${roomId}`,
+          `Join URL: ${link}`
+        ].join("\n");
+      }
+    }
+
+    /* ========================================================================
+       MODULE 7: UIController
+       Manages DOM views, video tile creation/updates without unnecessary DOM
+       thrashing, modals, toast messages, and participant sidebar rendering.
+       ======================================================================== */
+    class UIController {
+      constructor() {
+        this.pinnedParticipantId = null;
+      }
+
+      getInitials(name) {
+        const clean = String(name || "Guest").trim();
+        if (!clean) return "GU";
+        const parts = clean.split(/\s+/);
+        if (parts.length >= 2) {
+          return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+        return clean.slice(0, 2).toUpperCase();
+      }
+
+      showView(viewId) {
+        ["view-home", "view-lobby", "view-meeting"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.toggle("active", id === viewId);
+        });
+        const topNav = document.getElementById("top-navbar");
+        if (topNav) {
+          topNav.style.display = viewId === "view-meeting" ? "none" : "flex";
+        }
+      }
+
+      showToast(message, type = "info", durationMs = 4200) {
+        const stack = document.getElementById("toast-stack");
+        if (!stack) return;
+        const toast = document.createElement("div");
+        toast.className = `toast-item toast-${type}`;
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = message;
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "mini-ctrl-btn";
+        closeBtn.textContent = "×";
+        closeBtn.addEventListener("click", () => toast.remove());
+
+        toast.appendChild(textSpan);
+        toast.appendChild(closeBtn);
+        stack.appendChild(toast);
+
+        window.setTimeout(() => {
+          if (toast.parentNode) toast.remove();
+        }, durationMs);
+      }
+
+      showGlobalBanner(message, variant = "warn") {
+        const banner = document.getElementById("global-banner");
+        const text = document.getElementById("global-banner-text");
+        if (!banner || !text) return;
+        banner.className = "global-banner visible";
+        if (variant === "error") banner.classList.add("error-banner");
+        if (variant === "info") banner.classList.add("info-banner");
+        text.textContent = message;
+      }
+
+      hideGlobalBanner() {
+        const banner = document.getElementById("global-banner");
+        if (banner) banner.classList.remove("visible");
+      }
+
+      updateSignalingHeader(mode, detail = "") {
+        const dot = document.getElementById("signaling-status-dot");
+        const text = document.getElementById("signaling-status-text");
+        if (!dot || !text) return;
+
+        dot.className = "status-dot";
+        if (mode === "firebase") {
+          dot.classList.add("online");
+          text.textContent = "Firebase Signaling Connected";
+        } else if (mode === "local-loopback") {
+          dot.classList.add("local");
+          text.textContent = detail || "Multi-Tab Loopback Signaling";
+        } else {
+          dot.classList.add("error");
+          text.textContent = "Signaling Offline";
+        }
+      }
+
+      renderRecentMeetings(meetings, onSelectRoom) {
+        const container = document.getElementById("recent-meetings-list");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (!meetings || meetings.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state-box";
+          empty.textContent = "No recent meetings stored on this device yet. Start or join a room to save history.";
+          container.appendChild(empty);
+          return;
+        }
+
+        meetings.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "recent-item";
+
+          const meta = document.createElement("div");
+          meta.className = "recent-meta";
+
+          const code = document.createElement("div");
+          code.className = "recent-room-id";
+          code.textContent = item.roomId;
+
+          const sub = document.createElement("div");
+          sub.className = "recent-sub";
+          const dateStr = new Date(item.timestamp || Date.now()).toLocaleString([], {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+          sub.textContent = `${item.title || "Meeting"} • ${item.mode === "voice" ? "Voice-Only" : "Video"} • ${dateStr}`;
+
+          meta.appendChild(code);
+          meta.appendChild(sub);
+
+          const rejoinBtn = document.createElement("button");
+          rejoinBtn.type = "button";
+          rejoinBtn.className = "btn btn-secondary";
+          rejoinBtn.style.padding = "7px 12px";
+          rejoinBtn.style.fontSize = "0.78rem";
+          rejoinBtn.textContent = "Rejoin";
+          rejoinBtn.addEventListener("click", () => onSelectRoom(item));
+
+          row.appendChild(meta);
+          row.appendChild(rejoinBtn);
+          container.appendChild(row);
+        });
+      }
+
+      upsertVideoTile(participant, stream = null, onTogglePin = null) {
+        const grid = document.getElementById("video-grid");
+        const pinnedStage = document.getElementById("pinned-stage");
+        if (!grid || !pinnedStage) return;
+
+        const tileId = `tile-${participant.id}`;
+        let tile = document.getElementById(tileId);
+
+        if (!tile) {
+          tile = document.createElement("div");
+          tile.id = tileId;
+          tile.className = "video-tile";
+          tile.innerHTML = `
+            <video autoplay playsinline></video>
+            <div class="tile-avatar-fallback">
+              <div class="tile-avatar-circle"></div>
+              <div class="tile-fallback-status" style="font-size:0.78rem; color:var(--text-secondary);"></div>
+            </div>
+            <div class="tile-top-badges">
+              <span class="tile-conn-pill"></span>
+              <button type="button" class="tile-pin-btn">Pin</button>
+            </div>
+            <div class="tile-bottom-bar">
+              <div class="tile-name-tag">
+                <span class="tile-name-text"></span>
+                <span class="host-mini-badge" style="display:none;">Host</span>
+              </div>
+              <div class="tile-status-icons">
+                <div class="mic-badge"></div>
+              </div>
+            </div>
+          `;
+
+          const pinBtn = tile.querySelector(".tile-pin-btn");
+          pinBtn.addEventListener("click", () => {
+            if (typeof onTogglePin === "function") onTogglePin(participant.id);
+          });
+          grid.appendChild(tile);
+        }
+
+        // Route tile to Pinned Stage or Grid
+        const isPinned = this.pinnedParticipantId === participant.id;
+        const targetParent = isPinned ? pinnedStage : grid;
+        if (tile.parentElement !== targetParent) {
+          targetParent.appendChild(tile);
+        }
+        pinnedStage.classList.toggle("active", Boolean(this.pinnedParticipantId && pinnedStage.children.length > 0));
+
+        const videoEl = tile.querySelector("video");
+        const fallbackEl = tile.querySelector(".tile-avatar-fallback");
+        const avatarEl = tile.querySelector(".tile-avatar-circle");
+        const fallbackStatusEl = tile.querySelector(".tile-fallback-status");
+        const connPill = tile.querySelector(".tile-conn-pill");
+        const pinBtn = tile.querySelector(".tile-pin-btn");
+        const nameText = tile.querySelector(".tile-name-text");
+        const hostBadge = tile.querySelector(".host-mini-badge");
+        const micBadge = tile.querySelector(".mic-badge");
+
+        if (participant.isLocal) {
+          videoEl.muted = true;
+        }
+        videoEl.classList.toggle("mirrored", Boolean(participant.isLocal && !participant.isScreenSharing));
+        videoEl.classList.toggle("screen-video", Boolean(participant.isScreenSharing));
+
+        if (stream && videoEl.srcObject !== stream) {
+          videoEl.srcObject = stream;
+          videoEl.play().catch(() => {
+            if (!participant.isLocal) {
+              const resumeBtn = document.getElementById("btn-resume-audio");
+              if (resumeBtn) resumeBtn.style.display = "inline-flex";
+            }
+          });
+        }
+
+        const hasLiveVideo = Boolean(
+          (participant.camEnabled || participant.isScreenSharing) &&
+          stream &&
+          stream.getVideoTracks().some((t) => t.readyState === "live" && t.enabled)
+        );
+
+        fallbackEl.classList.toggle("hidden", hasLiveVideo);
+        avatarEl.textContent = this.getInitials(participant.name);
+        fallbackStatusEl.textContent = participant.mode === "voice"
+          ? "Voice-Only Participant"
+          : (participant.isScreenSharing ? "Sharing Screen" : "Camera Off");
+
+        connPill.textContent = participant.isScreenSharing
+          ? "Screen Share"
+          : (participant.connectionState || "Connected");
+        pinBtn.textContent = isPinned ? "Unpin" : "Pin";
+
+        nameText.textContent = participant.isLocal ? `${participant.name} (You)` : participant.name;
+        hostBadge.style.display = participant.isHost ? "inline-block" : "none";
+
+        tile.classList.toggle("speaking", Boolean(participant.isSpeaking && participant.micEnabled));
+
+        if (participant.micEnabled) {
+          micBadge.className = "mic-badge";
+          micBadge.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            </svg>
+          `;
+        } else {
+          micBadge.className = "mic-badge muted";
+          micBadge.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+            </svg>
+          `;
+        }
+
+        grid.setAttribute("data-count", String(Math.max(1, grid.children.length)));
+      }
+
+      removeVideoTile(participantId) {
+        if (this.pinnedParticipantId === participantId) {
+          this.pinnedParticipantId = null;
+        }
+        const tile = document.getElementById(`tile-${participantId}`);
+        if (tile) {
+          const video = tile.querySelector("video");
+          if (video) video.srcObject = null;
+          tile.remove();
+        }
+        const grid = document.getElementById("video-grid");
+        const pinnedStage = document.getElementById("pinned-stage");
+        if (grid) {
+          grid.setAttribute("data-count", String(Math.max(1, grid.children.length)));
+        }
+        if (pinnedStage) {
+          pinnedStage.classList.toggle("active", Boolean(this.pinnedParticipantId && pinnedStage.children.length > 0));
+        }
+      }
+
+      clearAllTiles() {
+        this.pinnedParticipantId = null;
+        const grid = document.getElementById("video-grid");
+        const pinnedStage = document.getElementById("pinned-stage");
+        if (grid) grid.innerHTML = "";
+        if (pinnedStage) {
+          pinnedStage.innerHTML = "";
+          pinnedStage.classList.remove("active");
+        }
+      }
+
+      renderParticipantsSidebar(participants, isLocalHost, callbacks) {
+        const listEl = document.getElementById("participants-list-container");
+        const countEl = document.getElementById("drawer-participant-count");
+        const badgeEl = document.getElementById("toolbar-participant-badge");
+
+        if (countEl) countEl.textContent = String(participants.length);
+        if (badgeEl) badgeEl.textContent = String(participants.length);
+        if (!listEl) return;
+
+        listEl.innerHTML = "";
+        participants.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "participant-row";
+
+          const info = document.createElement("div");
+          info.className = "participant-info";
+
+          const avatar = document.createElement("div");
+          avatar.className = "avatar-circle";
+          avatar.textContent = this.getInitials(p.name);
+
+          const meta = document.createElement("div");
+          meta.className = "participant-meta";
+
+          const nameDiv = document.createElement("div");
+          nameDiv.className = "participant-name";
+          nameDiv.textContent = `${p.name}${p.isLocal ? " (You)" : ""}${p.isHost ? " • Host" : ""}`;
+
+          const subDiv = document.createElement("div");
+          subDiv.className = "participant-sub";
+          const micLabel = p.micEnabled ? "Mic On" : "Muted";
+          const camLabel = p.isScreenSharing ? "Sharing Screen" : (p.camEnabled ? "Cam On" : "Cam Off");
+          subDiv.textContent = `${p.connectionState || "Connected"} • ${micLabel} • ${camLabel}`;
+
+          meta.appendChild(nameDiv);
+          meta.appendChild(subDiv);
+          info.appendChild(avatar);
+          info.appendChild(meta);
+
+          const actions = document.createElement("div");
+          actions.className = "participant-actions";
+
+          // Host controls (Strictly respecting privacy: Host can mute or remove, NEVER remotely turn on mic/camera)
+          if (isLocalHost && !p.isLocal) {
+            if (p.micEnabled) {
+              const muteBtn = document.createElement("button");
+              muteBtn.type = "button";
+              muteBtn.className = "mini-ctrl-btn";
+              muteBtn.textContent = "Mute";
+              muteBtn.title = "Mute participant microphone";
+              muteBtn.addEventListener("click", () => callbacks.onHostMuteParticipant(p.id));
+              actions.appendChild(muteBtn);
+            }
+
+            const makeHostBtn = document.createElement("button");
+            makeHostBtn.type = "button";
+            makeHostBtn.className = "mini-ctrl-btn";
+            makeHostBtn.textContent = "Make Host";
+            makeHostBtn.addEventListener("click", () => callbacks.onHostTransfer(p));
+            actions.appendChild(makeHostBtn);
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "mini-ctrl-btn danger";
+            removeBtn.textContent = "Remove";
+            removeBtn.addEventListener("click", () => callbacks.onHostRemoveParticipant(p.id));
+            actions.appendChild(removeBtn);
+          }
+
+          row.appendChild(info);
+          row.appendChild(actions);
+          listEl.appendChild(row);
+        });
+      }
+
+      updateToolbarButtons({ micEnabled, camEnabled, isScreenSharing, isVoiceMode, isHost }) {
+        const micBtn = document.getElementById("btn-toggle-mic");
+        const micIcon = document.getElementById("toolbar-mic-icon");
+        const micLabel = document.getElementById("toolbar-mic-label");
+
+        if (micBtn && micIcon && micLabel) {
+          micBtn.classList.toggle("off-state", !micEnabled);
+          micLabel.textContent = micEnabled ? "Mute" : "Unmute";
+          micIcon.innerHTML = micEnabled
+            ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg>`
+            : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path></svg>`;
+        }
+
+        const camBtn = document.getElementById("btn-toggle-cam");
+        const camIcon = document.getElementById("toolbar-cam-icon");
+        const camLabel = document.getElementById("toolbar-cam-label");
+
+        if (camBtn && camIcon && camLabel) {
+          camBtn.disabled = Boolean(isVoiceMode);
+          camBtn.classList.toggle("off-state", !camEnabled || isVoiceMode);
+          camLabel.textContent = isVoiceMode ? "Voice Only" : (camEnabled ? "Stop Video" : "Start Video");
+          camIcon.innerHTML = camEnabled && !isVoiceMode
+            ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`
+            : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+        }
+
+        const shareBtn = document.getElementById("btn-share-screen");
+        const shareLabel = document.getElementById("toolbar-share-label");
+        const shareBanner = document.getElementById("screen-share-banner");
+        if (shareBtn && shareLabel) {
+          shareBtn.classList.toggle("active-feature", Boolean(isScreenSharing));
+          shareLabel.textContent = isScreenSharing ? "Stop Share" : "Share Screen";
+        }
+        if (shareBanner) {
+          shareBanner.classList.toggle("active", Boolean(isScreenSharing));
+        }
+
+        const endAllBtn = document.getElementById("btn-end-meeting");
+        if (endAllBtn) {
+          endAllBtn.style.display = isHost ? "inline-flex" : "none";
+        }
+      }
+    }
+
+    /* ========================================================================
+       MODULE 8: ApplicationController
+       Orchestrates all modules, user flows, lobby preview lifecycle, active
+       meeting timers, device hot-swap listeners, and clipboard actions.
+       ======================================================================== */
+    class ApplicationController {
+      constructor() {
+        this.storage = new StorageManager();
+        this.roomManager = new RoomManager();
+        this.mediaManager = new MediaManager();
+        this.participantManager = new ParticipantManager();
+        this.ui = new UIController();
+
+        const savedFirebase = this.storage.getRuntimeFirebaseConfig();
+        const savedIce = this.storage.getRuntimeIceServers();
+        this.signaling = new FirebaseSignaling(savedFirebase || firebaseConfig);
+
+        this.webrtc = new WebRTCManager({
+          signaling: this.signaling,
+          mediaManager: this.mediaManager,
+          iceServers: savedIce || DEFAULT_ICE_SERVERS,
+          onRemoteStream: (remoteId, stream) => this.handleRemoteStream(remoteId, stream),
+          onPeerStateChange: (remoteId, state) => this.handlePeerStateChange(remoteId, state)
+        });
+
+        this.currentView = "home"; // 'home' | 'lobby' | 'meeting'
+        this.pendingRoomId = "";
+        this.pendingIsCreating = false;
+        this.pendingCallMode = "video";
+        this.pendingTitle = "";
+        this.activeRoomMeta = null;
+        this.localParticipant = null;
+        this.callTimerInterval = null;
+        this.callStartedAt = 0;
+        this.remoteStreams = new Map();
+      }
+
+      async init() {
+        this.applyPreferencesToHome();
+        this.bindAllEvents();
+        await this.runEnvironmentChecks();
+
+        const sigResult = await this.signaling.initialize();
+        this.ui.updateSignalingHeader(sigResult.mode);
+        if (sigResult.notice) {
+          this.ui.showGlobalBanner(sigResult.notice, "info");
+        } else if (sigResult.error) {
+          this.ui.showGlobalBanner(sigResult.error, "warn");
+        }
+
+        // Check URL parameters for direct meeting invitation (?room=...)
+        this.checkUrlForInvitation();
+      }
+
+      applyPreferencesToHome() {
+        const prefs = this.storage.getPreferences();
+        document.documentElement.setAttribute("data-accent", prefs.themeAccent || "blue");
+
+        const nameInput = document.getElementById("home-display-name");
+        const themeSelect = document.getElementById("home-theme-select");
+        if (nameInput) nameInput.value = prefs.displayName;
+        if (themeSelect) themeSelect.value = prefs.themeAccent || "blue";
+
+        this.updateProfileDisplay(prefs.displayName);
+        this.refreshRecentList();
+      }
+
+      updateProfileDisplay(name) {
+        const cleanName = String(name || "Guest User").trim() || "Guest User";
+        const headerName = document.getElementById("header-display-name");
+        const headerAvatar = document.getElementById("header-avatar");
+        const lobbyAvatar = document.getElementById("lobby-avatar-circle");
+        const initials = this.ui.getInitials(cleanName);
+
+        if (headerName) headerName.textContent = cleanName;
+        if (headerAvatar) headerAvatar.textContent = initials;
+        if (lobbyAvatar) lobbyAvatar.textContent = initials;
+      }
+
+      refreshRecentList() {
+        const list = this.storage.getRecentMeetings();
+        this.ui.renderRecentMeetings(list, (item) => {
+          this.openLobby({
+            roomId: item.roomId,
+            isCreating: false,
+            mode: item.mode || "video",
+            title: item.title || ""
+          });
+        });
+      }
+
+      async runEnvironmentChecks() {
+        const diagText = document.getElementById("env-diagnostics-text");
+        const badgesRow = document.getElementById("env-badges-row");
+        if (!diagText || !badgesRow) return;
+
+        const secure = this.mediaManager.isSecureContextAvailable();
+        const webrtcOk = this.mediaManager.isWebRTCSupported();
+        const screenOk = this.mediaManager.isScreenShareSupported();
+
+        badgesRow.innerHTML = "";
+        const makeBadge = (label, ok) => {
+          const span = document.createElement("span");
+          span.className = "brand-badge";
+          span.style.background = ok ? "rgba(16, 185, 129, 0.16)" : "rgba(239, 68, 68, 0.16)";
+          span.style.color = ok ? "#34d399" : "#f87171";
+          span.style.borderColor = ok ? "rgba(16, 185, 129, 0.35)" : "rgba(239, 68, 68, 0.35)";
+          span.textContent = label;
+          return span;
+        };
+
+        badgesRow.appendChild(makeBadge(secure ? "Secure Context (HTTPS/Local)" : "Insecure Context", secure));
+        badgesRow.appendChild(makeBadge(webrtcOk ? "RTCPeerConnection Ready" : "WebRTC Missing", webrtcOk));
+        badgesRow.appendChild(makeBadge(screenOk ? "Screen Share Supported" : "No Screen Share API", screenOk));
+
+        if (!secure) {
+          diagText.textContent = "Warning: Camera and microphone APIs require HTTPS or localhost.";
+          this.ui.showGlobalBanner("Camera & Microphone require HTTPS or localhost. Please serve this file over a secure context.", "error");
+        } else if (!webrtcOk) {
+          diagText.textContent = "Warning: This browser does not support standard WebRTC APIs.";
+        } else {
+          diagText.textContent = "Browser supports WebRTC peer-to-peer media, adaptive constraints, and audio level detection.";
+        }
+      }
+
+      checkUrlForInvitation() {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const roomParam = params.get("room");
+          const modeParam = params.get("mode");
+          const titleParam = params.get("title");
+          if (roomParam) {
+            const normalized = this.roomManager.normalizeRoomId(roomParam);
+            if (this.roomManager.isValidRoomId(normalized)) {
+              const roomInput = document.getElementById("home-meeting-id");
+              if (roomInput) roomInput.value = normalized;
+              this.openLobby({
+                roomId: normalized,
+                isCreating: false,
+                mode: modeParam === "voice" ? "voice" : "video",
+                title: titleParam || ""
+              });
+            }
+          }
+        } catch (_err) {
+          // Ignore URL parse errors
+        }
+      }
+
+      bindAllEvents() {
+        // Banner dismiss
+        document.getElementById("btn-dismiss-banner")?.addEventListener("click", () => {
+          this.ui.hideGlobalBanner();
+        });
+
+        // Home inputs
+        document.getElementById("home-display-name")?.addEventListener("input", (e) => {
+          const val = e.target.value;
+          this.storage.savePreferences({ displayName: val });
+          this.updateProfileDisplay(val);
+        });
+
+        document.getElementById("home-theme-select")?.addEventListener("change", (e) => {
+          const accent = e.target.value;
+          document.documentElement.setAttribute("data-accent", accent);
+          this.storage.savePreferences({ themeAccent: accent });
+        });
+
+        // New Video Meeting
+        document.getElementById("btn-new-video-meeting")?.addEventListener("click", () => {
+          const roomId = this.roomManager.generateRoomId();
+          this.openLobby({ roomId, isCreating: true, mode: "video", title: "Video Conference" });
+        });
+
+        // New Voice-Only Meeting
+        document.getElementById("btn-new-voice-meeting")?.addEventListener("click", () => {
+          const roomId = this.roomManager.generateRoomId();
+          this.openLobby({ roomId, isCreating: true, mode: "voice", title: "Voice Call" });
+        });
+
+        // Join Existing Meeting
+        document.getElementById("btn-join-existing")?.addEventListener("click", () => {
+          const raw = document.getElementById("home-meeting-id")?.value || "";
+          const normalized = this.roomManager.normalizeRoomId(raw);
+          if (!this.roomManager.isValidRoomId(normalized)) {
+            this.ui.showToast("Please enter a valid Meeting ID (e.g. abc-defg-hij) or invitation URL.", "error");
+            return;
+          }
+          this.openLobby({ roomId: normalized, isCreating: false, mode: "video", title: "" });
+        });
+
+        document.getElementById("home-meeting-id")?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            document.getElementById("btn-join-existing")?.click();
+          }
+        });
+
+        // Clear Recent History
+        document.getElementById("btn-clear-history")?.addEventListener("click", () => {
+          this.storage.clearRecentMeetings();
+          this.refreshRecentList();
+          this.ui.showToast("Cleared recent meeting history.", "info");
+        });
+
+        // Check Permissions button on Home
+        document.getElementById("btn-check-devices")?.addEventListener("click", async () => {
+          const devices = await this.mediaManager.enumerateMediaDevices();
+          const micEl = document.getElementById("home-mic-status");
+          const camEl = document.getElementById("home-cam-status");
+          if (micEl) micEl.textContent = `${devices.microphones.length} Audio Input(s) Detected`;
+          if (camEl) camEl.textContent = `${devices.cameras.length} Video Input(s) Detected`;
+          this.ui.showToast(`Detected ${devices.microphones.length} microphone(s) and ${devices.cameras.length} camera(s).`, "success");
+        });
+
+        // Lobby Controls
+        document.getElementById("btn-mode-video")?.addEventListener("click", () => this.switchLobbyMode("video"));
+        document.getElementById("btn-mode-voice")?.addEventListener("click", () => this.switchLobbyMode("voice"));
+
+        document.getElementById("btn-lobby-mic")?.addEventListener("click", async () => {
+          const res = await this.mediaManager.toggleMicrophone();
+          this.storage.savePreferences({ micEnabled: res.enabled });
+          this.syncLobbyPreviewUI();
+          if (res.error) this.ui.showToast(res.error, "warn");
+        });
+
+        document.getElementById("btn-lobby-cam")?.addEventListener("click", async () => {
+          if (this.pendingCallMode === "voice") {
+            this.ui.showToast("Switch to Video & Voice Call mode to enable your camera.", "info");
+            return;
+          }
+          const selectedCam = document.getElementById("lobby-cam-select")?.value || "";
+          const res = await this.mediaManager.toggleCamera(null, selectedCam);
+          this.storage.savePreferences({ camEnabled: res.enabled });
+          this.syncLobbyPreviewUI();
+          if (res.error) this.ui.showToast(res.error, "warn");
+        });
+
+        document.getElementById("lobby-mic-select")?.addEventListener("change", async (e) => {
+          const micId = e.target.value;
+          this.storage.savePreferences({ preferredMicId: micId });
+          await this.startLobbyPreviewMedia();
+        });
+
+        document.getElementById("lobby-cam-select")?.addEventListener("change", async (e) => {
+          const camId = e.target.value;
+          this.storage.savePreferences({ preferredCamId: camId });
+          await this.startLobbyPreviewMedia();
+        });
+
+        document.getElementById("btn-lobby-retry-media")?.addEventListener("click", () => {
+          this.startLobbyPreviewMedia();
+        });
+
+        document.getElementById("btn-lobby-switch-voice")?.addEventListener("click", () => {
+          this.switchLobbyMode("voice");
+        });
+
+        document.getElementById("btn-lobby-cancel")?.addEventListener("click", () => {
+          this.leaveLobbyWithoutJoining();
+        });
+
+        document.getElementById("btn-lobby-join-now")?.addEventListener("click", () => {
+          this.joinActiveMeetingFromLobby();
+        });
+
+        // Active Meeting Toolbar Controls
+        document.getElementById("btn-toggle-mic")?.addEventListener("click", () => this.handleMeetingMicToggle());
+        document.getElementById("btn-toggle-cam")?.addEventListener("click", () => this.handleMeetingCamToggle());
+        document.getElementById("btn-share-screen")?.addEventListener("click", () => this.handleMeetingScreenShareToggle());
+        document.getElementById("btn-banner-stop-share")?.addEventListener("click", () => this.handleMeetingScreenShareToggle(true));
+
+        document.getElementById("btn-participants")?.addEventListener("click", () => {
+          const drawer = document.getElementById("participants-drawer");
+          if (drawer) drawer.classList.toggle("open");
+        });
+
+        document.getElementById("btn-close-drawer")?.addEventListener("click", () => {
+          document.getElementById("participants-drawer")?.classList.remove("open");
+        });
+
+        document.getElementById("btn-copy-invite")?.addEventListener("click", () => this.copyMeetingInvitation());
+        document.getElementById("btn-meeting-info")?.addEventListener("click", () => this.openMeetingInfoModal());
+        document.getElementById("btn-leave-meeting")?.addEventListener("click", () => this.leaveActiveMeeting("You left the meeting."));
+
+        document.getElementById("btn-end-meeting")?.addEventListener("click", () => {
+          document.getElementById("modal-confirm-end")?.classList.add("open");
+        });
+
+        document.getElementById("btn-cancel-end-modal")?.addEventListener("click", () => {
+          document.getElementById("modal-confirm-end")?.classList.remove("open");
+        });
+
+        document.getElementById("btn-confirm-leave-only")?.addEventListener("click", () => {
+          document.getElementById("modal-confirm-end")?.classList.remove("open");
+          this.leaveActiveMeeting("You left the meeting.");
+        });
+
+        document.getElementById("btn-confirm-end-all")?.addEventListener("click", async () => {
+          document.getElementById("modal-confirm-end")?.classList.remove("open");
+          await this.endMeetingForAll();
+        });
+
+        // Resume blocked mobile audio
+        document.getElementById("btn-resume-audio")?.addEventListener("click", (e) => {
+          document.querySelectorAll("#video-grid video, #pinned-stage video").forEach((v) => {
+            if (!v.muted) v.play().catch(() => {});
+          });
+          e.currentTarget.style.display = "none";
+        });
+
+        // Meeting Info Modal buttons
+        document.getElementById("btn-close-info-modal")?.addEventListener("click", () => {
+          document.getElementById("modal-meeting-info")?.classList.remove("open");
+        });
+
+        document.getElementById("btn-info-copy-id")?.addEventListener("click", () => {
+          if (this.activeRoomMeta?.roomId) {
+            this.copyTextToClipboard(this.activeRoomMeta.roomId, "Meeting ID copied to clipboard.");
+          }
+        });
+
+        document.getElementById("btn-info-copy-full")?.addEventListener("click", () => {
+          this.copyMeetingInvitation();
+        });
+
+        // Config Modal buttons
+        document.getElementById("btn-open-config")?.addEventListener("click", () => {
+          const fbArea = document.getElementById("config-firebase-json");
+          const turnArea = document.getElementById("config-turn-json");
+          if (fbArea) {
+            const currentFb = this.storage.getRuntimeFirebaseConfig() || firebaseConfig;
+            fbArea.value = JSON.stringify(currentFb, null, 2);
+          }
+          if (turnArea) {
+            const currentIce = this.storage.getRuntimeIceServers() || DEFAULT_ICE_SERVERS;
+            turnArea.value = JSON.stringify(currentIce, null, 2);
+          }
+          document.getElementById("modal-config")?.classList.add("open");
+        });
+
+        document.getElementById("btn-close-config-modal")?.addEventListener("click", () => {
+          document.getElementById("modal-config")?.classList.remove("open");
+        });
+
+        document.getElementById("btn-reset-config")?.addEventListener("click", async () => {
+          this.storage.setRuntimeFirebaseConfig(null);
+          this.storage.setRuntimeIceServers(null);
+          const res = await this.signaling.initialize(firebaseConfig);
+          this.ui.updateSignalingHeader(res.mode);
+          document.getElementById("modal-config")?.classList.remove("open");
+          this.ui.showToast("Reset signaling and ICE settings to code defaults.", "info");
+        });
+
+        document.getElementById("btn-save-config")?.addEventListener("click", async () => {
+          const fbRaw = document.getElementById("config-firebase-json")?.value || "";
+          const iceRaw = document.getElementById("config-turn-json")?.value || "";
+          try {
+            const parsedFb = JSON.parse(fbRaw);
+            const parsedIce = JSON.parse(iceRaw);
+            if (!Array.isArray(parsedIce)) throw new Error("ICE servers must be a JSON array.");
+
+            this.storage.setRuntimeFirebaseConfig(parsedFb);
+            this.storage.setRuntimeIceServers(parsedIce);
+            this.webrtc.iceServers = parsedIce;
+
+            const res = await this.signaling.initialize(parsedFb);
+            this.ui.updateSignalingHeader(res.mode);
+            document.getElementById("modal-config")?.classList.remove("open");
+            this.ui.showToast(
+              res.mode === "firebase"
+                ? "Connected to Firebase Realtime Database signaling!"
+                : "Saved settings (using Multi-Tab Loopback until valid Firebase credentials are provided).",
+              res.mode === "firebase" ? "success" : "info"
+            );
+          } catch (err) {
+            this.ui.showToast(`Invalid JSON configuration: ${err.message}`, "error");
+          }
+        });
+
+        // Setup Guide Modal buttons
+        document.getElementById("btn-open-guide")?.addEventListener("click", () => {
+          document.getElementById("modal-guide")?.classList.add("open");
+        });
+
+        document.getElementById("btn-close-guide-modal")?.addEventListener("click", () => {
+          document.getElementById("modal-guide")?.classList.remove("open");
+        });
+
+        document.getElementById("btn-guide-done")?.addEventListener("click", () => {
+          document.getElementById("modal-guide")?.classList.remove("open");
+        });
+
+        // Hardware device hot-swap listener (restores controls cleanly if a device disconnects)
+        if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+          navigator.mediaDevices.addEventListener("devicechange", () => {
+            this.handleHardwareDeviceChange();
+          });
+        }
+
+        // Cleanup on unexpected page closure
+        window.addEventListener("beforeunload", () => {
+          if (this.currentView === "meeting" && this.activeRoomMeta && this.localParticipant) {
+            this.signaling.leaveRoom(this.activeRoomMeta.roomId, this.localParticipant.id);
+            this.webrtc.closeAllPeers();
+            this.mediaManager.stopAllLocalMedia();
+          }
+        });
+      }
+
+      /* ======================================================================
+         PRE-MEETING LOBBY FLOW
+         ====================================================================== */
+      async openLobby({ roomId, isCreating, mode = "video", title = "" }) {
+        const prefs = this.storage.getPreferences();
+        this.pendingRoomId = roomId;
+        this.pendingIsCreating = Boolean(isCreating);
+        this.pendingCallMode = mode === "voice" ? "voice" : "video";
+        this.pendingTitle = title || (mode === "voice" ? "Voice Call" : "Video Meeting");
+        this.currentView = "lobby";
+
+        const roomBadge = document.getElementById("lobby-room-badge");
+        const nameInput = document.getElementById("lobby-display-name");
+        const titleInput = document.getElementById("lobby-meeting-title");
+        if (roomBadge) roomBadge.textContent = roomId;
+        if (nameInput) nameInput.value = prefs.displayName || "Guest User";
+        if (titleInput) titleInput.value = this.pendingTitle;
+
+        this.ui.showView("view-lobby");
+        await this.switchLobbyMode(this.pendingCallMode);
+      }
+
+      async switchLobbyMode(mode) {
+        this.pendingCallMode = mode === "voice" ? "voice" : "video";
+        document.getElementById("btn-mode-video")?.classList.toggle("active", this.pendingCallMode === "video");
+        document.getElementById("btn-mode-voice")?.classList.toggle("active", this.pendingCallMode === "voice");
+
+        const camSelectGroup = document.getElementById("lobby-cam-select-group");
+        if (camSelectGroup) {
+          camSelectGroup.style.display = this.pendingCallMode === "voice" ? "none" : "block";
+        }
+
+        await this.startLobbyPreviewMedia();
+      }
+
+      async startLobbyPreviewMedia() {
+        const prefs = this.storage.getPreferences();
+        const result = await this.mediaManager.acquireMediaStream({
+          mode: this.pendingCallMode,
+          wantMic: prefs.micEnabled,
+          wantCam: this.pendingCallMode === "video" ? prefs.camEnabled : false,
+          micDeviceId: prefs.preferredMicId,
+          camDeviceId: prefs.preferredCamId
+        });
+
+        await this.populateLobbyDeviceSelectors();
+        this.syncLobbyPreviewUI(result);
+
+        // Attach live audio meter in lobby
+        this.mediaManager.removeStreamAudioMonitor("lobby");
+        if (result.hasAudio && result.stream) {
+          this.mediaManager.monitorStreamAudioLevel("lobby", result.stream, (level) => {
+            const meter = document.getElementById("lobby-audio-meter");
+            if (meter) {
+              meter.style.width = this.mediaManager.micEnabled ? `${level}%` : "0%";
+            }
+          });
+        }
+      }
+
+      async populateLobbyDeviceSelectors() {
+        const { microphones, cameras } = await this.mediaManager.enumerateMediaDevices();
+        const prefs = this.storage.getPreferences();
+        const micSelect = document.getElementById("lobby-mic-select");
+        const camSelect = document.getElementById("lobby-cam-select");
+
+        if (micSelect) {
+          micSelect.innerHTML = "";
+          if (microphones.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Default / No Microphone Detected";
+            micSelect.appendChild(opt);
+          } else {
+            microphones.forEach((d, idx) => {
+              const opt = document.createElement("option");
+              opt.value = d.deviceId;
+              opt.textContent = d.label || `Microphone ${idx + 1}`;
+              if (d.deviceId === prefs.preferredMicId) opt.selected = true;
+              micSelect.appendChild(opt);
+            });
+          }
+        }
+
+        if (camSelect) {
+          camSelect.innerHTML = "";
+          if (cameras.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Default / No Camera Detected";
+            camSelect.appendChild(opt);
+          } else {
+            cameras.forEach((d, idx) => {
+              const opt = document.createElement("option");
+              opt.value = d.deviceId;
+              opt.textContent = d.label || `Camera ${idx + 1}`;
+              if (d.deviceId === prefs.preferredCamId) opt.selected = true;
+              camSelect.appendChild(opt);
+            });
+          }
+        }
+      }
+
+      syncLobbyPreviewUI(acquireResult = null) {
+        const videoEl = document.getElementById("lobby-video-preview");
+        const placeholder = document.getElementById("lobby-preview-placeholder");
+        const placeholderTitle = document.getElementById("lobby-placeholder-title");
+        const placeholderSub = document.getElementById("lobby-placeholder-sub");
+        const micBtn = document.getElementById("btn-lobby-mic");
+        const camBtn = document.getElementById("btn-lobby-cam");
+        const helpBox = document.getElementById("lobby-permission-help");
+        const helpText = document.getElementById("lobby-permission-help-text");
+
+        const hasLiveCam = Boolean(
+          this.pendingCallMode === "video" &&
+          this.mediaManager.camEnabled &&
+          this.mediaManager.cameraTrack &&
+          this.mediaManager.cameraTrack.readyState === "live"
+        );
+
+        if (videoEl) {
+          videoEl.srcObject = hasLiveCam ? this.mediaManager.localStream : null;
+        }
+        if (placeholder) {
+          placeholder.classList.toggle("hidden", hasLiveCam);
+        }
+        if (placeholderTitle && placeholderSub) {
+          if (this.pendingCallMode === "voice") {
+            placeholderTitle.textContent = "Voice-Only Call Mode";
+            placeholderSub.textContent = "Your camera will not be activated. Audio-only WebRTC connection.";
+          } else {
+            placeholderTitle.textContent = "Camera Preview Off";
+            placeholderSub.textContent = "Turn on your camera below or join with video turned off.";
+          }
+        }
+
+        if (micBtn) micBtn.classList.toggle("off", !this.mediaManager.micEnabled);
+        if (camBtn) {
+          camBtn.classList.toggle("off", !this.mediaManager.camEnabled || this.pendingCallMode === "voice");
+        }
+
+        if (acquireResult && (acquireResult.micError || acquireResult.camError)) {
+          if (helpBox && helpText) {
+            helpBox.style.display = "block";
+            helpText.textContent = [acquireResult.micError, acquireResult.camError].filter(Boolean).join(" ");
+          }
+        } else if (helpBox) {
+          helpBox.style.display = "none";
+        }
+      }
+
+      leaveLobbyWithoutJoining() {
+        // Strictly stop preview media tracks when leaving the lobby without joining
+        this.mediaManager.removeStreamAudioMonitor("lobby");
+        this.mediaManager.stopAllLocalMedia();
+        const videoEl = document.getElementById("lobby-video-preview");
+        if (videoEl) videoEl.srcObject = null;
+        this.currentView = "home";
+        this.ui.showView("view-home");
+      }
+
+      /* ======================================================================
+         ACTIVE MEETING ROOM LIFECYCLE
+         ====================================================================== */
+      async joinActiveMeetingFromLobby() {
+        const displayName = (document.getElementById("lobby-display-name")?.value || "").trim() || "Guest User";
+        const meetingTitle = (document.getElementById("lobby-meeting-title")?.value || "").trim() || "PulseMeet Session";
+
+        this.storage.savePreferences({ displayName });
+        this.updateProfileDisplay(displayName);
+        this.mediaManager.removeStreamAudioMonitor("lobby");
+
+        const localId = this.roomManager.generateParticipantId();
+        const participant = {
+          id: localId,
+          name: displayName,
+          micEnabled: this.mediaManager.micEnabled,
+          camEnabled: this.pendingCallMode === "video" ? this.mediaManager.camEnabled : false,
+          isScreenSharing: false,
+          mode: this.pendingCallMode
+        };
+
+        try {
+          const { meta, isHost } = await this.signaling.createOrJoinRoom({
+            roomId: this.pendingRoomId,
+            participant,
+            isCreating: this.pendingIsCreating,
+            title: meetingTitle,
+            callMode: this.pendingCallMode
+          });
+
+          participant.isHost = isHost;
+          this.localParticipant = participant;
+          this.activeRoomMeta = meta;
+          this.currentView = "meeting";
+
+          // Save to recent meeting history
+          this.storage.addRecentMeeting({
+            roomId: meta.roomId,
+            title: meta.title || meetingTitle,
+            mode: this.pendingCallMode,
+            role: isHost ? "Host" : "Participant"
+          });
+          this.refreshRecentList();
+
+          // Initialize WebRTC session & Participant Manager
+          this.participantManager.clear();
+          this.participantManager.setLocalParticipant(participant);
+          this.webrtc.configureSession(meta.roomId, localId, this.storage.getRuntimeIceServers());
+
+          // Switch UI to Active Meeting view
+          this.ui.clearAllTiles();
+          this.ui.showView("view-meeting");
+          this.syncMeetingHeaderUI();
+          this.ui.updateToolbarButtons({
+            micEnabled: participant.micEnabled,
+            camEnabled: participant.camEnabled,
+            isScreenSharing: false,
+            isVoiceMode: this.pendingCallMode === "voice",
+            isHost
+          });
+
+          // Render local participant tile
+          this.ui.upsertVideoTile(
+            this.participantManager.getParticipant(localId),
+            this.mediaManager.localStream,
+            (pinId) => this.togglePinParticipant(pinId)
+          );
+          this.refreshParticipantsSidebar();
+
+          // Monitor local audio level for active speaker ring
+          if (this.mediaManager.localStream) {
+            this.mediaManager.monitorStreamAudioLevel(localId, this.mediaManager.localStream, (_lvl, speaking) => {
+              if (this.participantManager.updateSpeakingState(localId, speaking)) {
+                const p = this.participantManager.getParticipant(localId);
+                if (p) this.ui.upsertVideoTile(p, this.mediaManager.localStream, (id) => this.togglePinParticipant(id));
+              }
+            });
+          }
+
+          // Start Call Duration Timer
+          this.startCallTimer();
+
+          // Subscribe to room signaling events
+          this.signaling.subscribeToRoom(meta.roomId, localId, {
+            onMetaUpdated: (updatedMeta) => {
+              this.activeRoomMeta = updatedMeta;
+              if (this.localParticipant) {
+                this.localParticipant.isHost = updatedMeta.hostId === this.localParticipant.id;
+              }
+              this.syncMeetingHeaderUI();
+              this.refreshParticipantsSidebar();
+              this.ui.updateToolbarButtons({
+                micEnabled: this.mediaManager.micEnabled,
+                camEnabled: this.mediaManager.camEnabled,
+                isScreenSharing: this.mediaManager.isScreenSharing,
+                isVoiceMode: this.pendingCallMode === "voice",
+                isHost: Boolean(this.localParticipant?.isHost)
+              });
+            },
+            onParticipantJoined: (remoteP) => this.handleParticipantJoined(remoteP),
+            onParticipantUpdated: (remoteP) => this.handleParticipantUpdated(remoteP),
+            onParticipantLeft: (remoteId) => this.handleParticipantLeft(remoteId),
+            onSignalMessage: (senderId, payload) => this.handleSignalEnvelope(senderId, payload),
+            onRoomEnded: (reason) => this.leaveActiveMeeting(reason || "Meeting ended.")
+          });
+
+          this.ui.showToast(`Joined room ${meta.roomId}`, "success");
+        } catch (err) {
+          this.ui.showToast(err.message || "Could not join meeting room.", "error");
+        }
+      }
+
+      handleParticipantJoined(remoteP) {
+        if (!remoteP || !remoteP.id) return;
+        const isSelf = remoteP.id === this.localParticipant?.id;
+        const merged = this.participantManager.upsertParticipant(remoteP);
+
+        if (!isSelf) {
+          this.ui.showToast(`${remoteP.name} joined the meeting.`, "info", 2800);
+          // Create peer connection and initiate offer if we are the impolite peer
+          this.webrtc.ensurePeerConnection(remoteP.id, true);
+          const stream = this.remoteStreams.get(remoteP.id) || null;
+          this.ui.upsertVideoTile(merged, stream, (id) => this.togglePinParticipant(id));
+        } else {
+          this.ui.upsertVideoTile(merged, this.mediaManager.localStream, (id) => this.togglePinParticipant(id));
+        }
+
+        this.refreshParticipantsSidebar();
+        this.syncOverallConnectionBadge();
+      }
+
+      handleParticipantUpdated(remoteP) {
+        if (!remoteP || !remoteP.id) return;
+        const merged = this.participantManager.upsertParticipant(remoteP);
+        const stream = merged.isLocal
+          ? this.mediaManager.localStream
+          : (this.remoteStreams.get(remoteP.id) || null);
+        this.ui.upsertVideoTile(merged, stream, (id) => this.togglePinParticipant(id));
+        this.refreshParticipantsSidebar();
+      }
+
+      handleParticipantLeft(remoteId) {
+        if (!remoteId) return;
+        if (remoteId === this.localParticipant?.id) {
+          this.leaveActiveMeeting("You were removed from the meeting by the host.");
+          return;
+        }
+        const departing = this.participantManager.getParticipant(remoteId);
+        if (departing) {
+          this.ui.showToast(`${departing.name} left the meeting.`, "info", 2800);
+        }
+        this.participantManager.removeParticipant(remoteId);
+        this.mediaManager.removeStreamAudioMonitor(remoteId);
+        this.remoteStreams.delete(remoteId);
+        this.webrtc.closePeer(remoteId);
+        this.ui.removeVideoTile(remoteId);
+        this.refreshParticipantsSidebar();
+        this.syncOverallConnectionBadge();
+      }
+
+      async handleSignalEnvelope(senderId, payload) {
+        if (payload.type === "control" && payload.action === "host-mute") {
+          // Host requested mute (never unmute!)
+          if (this.mediaManager.micEnabled) {
+            await this.handleMeetingMicToggle(false);
+            this.ui.showToast("The meeting host muted your microphone.", "warn");
+          }
+          return;
+        }
+        await this.webrtc.handleIncomingSignal(senderId, payload);
+      }
+
+      handleRemoteStream(remoteId, stream) {
+        this.remoteStreams.set(remoteId, stream);
+        const p = this.participantManager.getParticipant(remoteId);
+        if (p) {
+          this.ui.upsertVideoTile(p, stream, (id) => this.togglePinParticipant(id));
+        }
+        this.mediaManager.monitorStreamAudioLevel(remoteId, stream, (_lvl, speaking) => {
+          if (this.participantManager.updateSpeakingState(remoteId, speaking)) {
+            const updatedP = this.participantManager.getParticipant(remoteId);
+            if (updatedP) {
+              this.ui.upsertVideoTile(updatedP, stream, (id) => this.togglePinParticipant(id));
+            }
+          }
+        });
+      }
+
+      handlePeerStateChange(remoteId, state) {
+        const updated = this.participantManager.updateConnectionState(remoteId, state);
+        if (updated) {
+          const stream = this.remoteStreams.get(remoteId) || null;
+          this.ui.upsertVideoTile(updated, stream, (id) => this.togglePinParticipant(id));
+        }
+        this.refreshParticipantsSidebar();
+        this.syncOverallConnectionBadge();
+      }
+
+      syncOverallConnectionBadge() {
+        const badge = document.getElementById("active-connection-badge");
+        if (!badge) return;
+        const remoteList = this.participantManager.getAllParticipants().filter((p) => !p.isLocal);
+
+        badge.className = "connection-badge";
+        if (remoteList.length === 0) {
+          badge.textContent = "Connected (Ready for Peers)";
+          return;
+        }
+        const states = remoteList.map((p) => p.connectionState);
+        if (states.some((s) => s === "Failed")) {
+          badge.classList.add("failed");
+          badge.textContent = "Peer Connection Failed";
+        } else if (states.some((s) => s === "Reconnecting")) {
+          badge.classList.add("reconnecting");
+          badge.textContent = "Reconnecting...";
+        } else if (states.some((s) => s === "Connecting")) {
+          badge.classList.add("connecting");
+          badge.textContent = "Connecting Peers...";
+        } else {
+          badge.textContent = `Connected (${remoteList.length + 1} in Mesh)`;
+        }
+      }
+
+      syncMeetingHeaderUI() {
+        const codeEl = document.getElementById("active-room-code");
+        const titleEl = document.getElementById("active-meeting-title");
+        const voiceBanner = document.getElementById("active-voice-banner");
+        if (codeEl && this.activeRoomMeta) codeEl.textContent = this.activeRoomMeta.roomId;
+        if (titleEl && this.activeRoomMeta) titleEl.textContent = this.activeRoomMeta.title || "Meeting Room";
+        if (voiceBanner) {
+          voiceBanner.classList.toggle("active", this.pendingCallMode === "voice");
+        }
+      }
+
+      togglePinParticipant(participantId) {
+        if (this.ui.pinnedParticipantId === participantId) {
+          this.ui.pinnedParticipantId = null;
+        } else {
+          this.ui.pinnedParticipantId = participantId;
+        }
+        this.participantManager.getAllParticipants().forEach((p) => {
+          const stream = p.isLocal ? this.mediaManager.localStream : (this.remoteStreams.get(p.id) || null);
+          this.ui.upsertVideoTile(p, stream, (id) => this.togglePinParticipant(id));
+        });
+      }
+
+      refreshParticipantsSidebar() {
+        const all = this.participantManager.getAllParticipants();
+        const isLocalHost = Boolean(this.localParticipant?.isHost);
+        this.ui.renderParticipantsSidebar(all, isLocalHost, {
+          onHostMuteParticipant: async (targetId) => {
+            if (!this.activeRoomMeta || !this.localParticipant) return;
+            await this.signaling.sendSignal(this.activeRoomMeta.roomId, this.localParticipant.id, targetId, {
+              type: "control",
+              action: "host-mute"
+            });
+            this.ui.showToast("Sent mute request to participant.", "info");
+          },
+          onHostTransfer: async (targetP) => {
+            if (!this.activeRoomMeta || !this.localParticipant) return;
+            await this.signaling.transferHostRole(this.activeRoomMeta.roomId, targetP.id, targetP.name);
+            await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, this.localParticipant.id, { isHost: false });
+            await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, targetP.id, { isHost: true });
+            this.ui.showToast(`Transferred host role to ${targetP.name}.`, "success");
+          },
+          onHostRemoveParticipant: async (targetId) => {
+            if (!this.activeRoomMeta) return;
+            await this.signaling.removeParticipantFromRoom(this.activeRoomMeta.roomId, targetId);
+            this.handleParticipantLeft(targetId);
+          }
+        });
+      }
+
+      async handleMeetingMicToggle(forceState = null) {
+        if (!this.localParticipant || !this.activeRoomMeta) return;
+        const res = await this.mediaManager.toggleMicrophone(forceState);
+        if (res.newTrack) {
+          await this.webrtc.replaceOutgoingAudioTrack(res.newTrack);
+        }
+        this.localParticipant.micEnabled = res.enabled;
+        this.participantManager.upsertParticipant(this.localParticipant);
+
+        await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, this.localParticipant.id, {
+          micEnabled: res.enabled
+        });
+
+        this.ui.upsertVideoTile(this.localParticipant, this.mediaManager.localStream, (id) => this.togglePinParticipant(id));
+        this.ui.updateToolbarButtons({
+          micEnabled: res.enabled,
+          camEnabled: this.mediaManager.camEnabled,
+          isScreenSharing: this.mediaManager.isScreenSharing,
+          isVoiceMode: this.pendingCallMode === "voice",
+          isHost: Boolean(this.localParticipant.isHost)
+        });
+        this.refreshParticipantsSidebar();
+        if (res.error) this.ui.showToast(res.error, "warn");
+      }
+
+      async handleMeetingCamToggle() {
+        if (!this.localParticipant || !this.activeRoomMeta) return;
+        const prefs = this.storage.getPreferences();
+        const res = await this.mediaManager.toggleCamera(null, prefs.preferredCamId);
+
+        if (!this.mediaManager.isScreenSharing) {
+          await this.webrtc.replaceOutgoingVideoTrack(res.enabled ? res.track : null);
+        }
+
+        this.localParticipant.camEnabled = res.enabled;
+        this.participantManager.upsertParticipant(this.localParticipant);
+
+        await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, this.localParticipant.id, {
+          camEnabled: res.enabled
+        });
+
+        const displayStream = this.mediaManager.isScreenSharing
+          ? this.mediaManager.screenStream
+          : this.mediaManager.localStream;
+        this.ui.upsertVideoTile(this.localParticipant, displayStream, (id) => this.togglePinParticipant(id));
+        this.ui.updateToolbarButtons({
+          micEnabled: this.mediaManager.micEnabled,
+          camEnabled: res.enabled,
+          isScreenSharing: this.mediaManager.isScreenSharing,
+          isVoiceMode: this.pendingCallMode === "voice",
+          isHost: Boolean(this.localParticipant.isHost)
+        });
+        this.refreshParticipantsSidebar();
+        if (res.error) this.ui.showToast(res.error, "warn");
+      }
+
+      async handleMeetingScreenShareToggle(forceStop = false) {
+        if (!this.localParticipant || !this.activeRoomMeta) return;
+
+        if (this.mediaManager.isScreenSharing || forceStop) {
+          const restoredCamTrack = this.mediaManager.stopScreenShare();
+          await this.webrtc.replaceOutgoingVideoTrack(
+            this.mediaManager.camEnabled && restoredCamTrack ? restoredCamTrack : null
+          );
+          this.localParticipant.isScreenSharing = false;
+          this.participantManager.upsertParticipant(this.localParticipant);
+
+          await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, this.localParticipant.id, {
+            isScreenSharing: false
+          });
+
+          this.ui.upsertVideoTile(this.localParticipant, this.mediaManager.localStream, (id) => this.togglePinParticipant(id));
+          this.ui.updateToolbarButtons({
+            micEnabled: this.mediaManager.micEnabled,
+            camEnabled: this.mediaManager.camEnabled,
+            isScreenSharing: false,
+            isVoiceMode: this.pendingCallMode === "voice",
+            isHost: Boolean(this.localParticipant.isHost)
+          });
+          this.refreshParticipantsSidebar();
+          this.ui.showToast("Screen sharing stopped. Restored camera state.", "info");
+          return;
+        }
+
+        try {
+          const screenTrack = await this.mediaManager.startScreenShare(() => {
+            // Triggered when user clicks native browser "Stop sharing" bar
+            this.handleMeetingScreenShareToggle(true);
+          });
+
+          await this.webrtc.replaceOutgoingVideoTrack(screenTrack);
+          this.localParticipant.isScreenSharing = true;
+          this.participantManager.upsertParticipant(this.localParticipant);
+
+          await this.signaling.updateParticipantState(this.activeRoomMeta.roomId, this.localParticipant.id, {
+            isScreenSharing: true
+          });
+
+          this.ui.upsertVideoTile(this.localParticipant, this.mediaManager.screenStream, (id) => this.togglePinParticipant(id));
+          this.ui.updateToolbarButtons({
+            micEnabled: this.mediaManager.micEnabled,
+            camEnabled: this.mediaManager.camEnabled,
+            isScreenSharing: true,
+            isVoiceMode: this.pendingCallMode === "voice",
+            isHost: Boolean(this.localParticipant.isHost)
+          });
+          this.refreshParticipantsSidebar();
+          this.ui.showToast("Screen sharing started.", "success");
+        } catch (err) {
+          this.ui.showToast(err.message || "Screen sharing was cancelled or is unsupported.", "warn");
+        }
+      }
+
+      async handleHardwareDeviceChange() {
+        if (this.currentView === "lobby") {
+          await this.populateLobbyDeviceSelectors();
+          return;
+        }
+        if (this.currentView === "meeting" && this.localParticipant) {
+          // Verify whether active audio or camera track ended due to USB unplug
+          if (this.mediaManager.audioTrack && this.mediaManager.audioTrack.readyState === "ended") {
+            this.ui.showToast("Microphone disconnected. Attempting to switch to default audio input...", "warn");
+            this.mediaManager.audioTrack = null;
+            if (this.mediaManager.micEnabled) {
+              await this.handleMeetingMicToggle(true);
+            }
+          }
+          if (this.mediaManager.cameraTrack && this.mediaManager.cameraTrack.readyState === "ended") {
+            this.ui.showToast("Camera disconnected. Restoring controls...", "warn");
+            this.mediaManager.cameraTrack = null;
+            this.mediaManager.camEnabled = false;
+            this.localParticipant.camEnabled = false;
+            this.ui.updateToolbarButtons({
+              micEnabled: this.mediaManager.micEnabled,
+              camEnabled: false,
+              isScreenSharing: this.mediaManager.isScreenSharing,
+              isVoiceMode: this.pendingCallMode === "voice",
+              isHost: Boolean(this.localParticipant.isHost)
+            });
+          }
+        }
+      }
+
+      startCallTimer() {
+        this.stopCallTimer();
+        this.callStartedAt = Date.now();
+        const timerEl = document.getElementById("active-call-timer");
+        this.callTimerInterval = window.setInterval(() => {
+          if (!timerEl) return;
+          const elapsedSec = Math.floor((Date.now() - this.callStartedAt) / 1000);
+          const mins = String(Math.floor(elapsedSec / 60)).padStart(2, "0");
+          const secs = String(elapsedSec % 60).padStart(2, "0");
+          timerEl.textContent = `${mins}:${secs}`;
+        }, 1000);
+      }
+
+      stopCallTimer() {
+        if (this.callTimerInterval) {
+          window.clearInterval(this.callTimerInterval);
+          this.callTimerInterval = null;
+        }
+      }
+
+      openMeetingInfoModal() {
+        if (!this.activeRoomMeta) return;
+        const inviteText = this.roomManager.buildInvitationText({
+          roomId: this.activeRoomMeta.roomId,
+          title: this.activeRoomMeta.title,
+          hostName: this.activeRoomMeta.hostName,
+          mode: this.pendingCallMode
+        });
+
+        const setEl = (id, val) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = val;
+        };
+
+        setEl("info-modal-title", this.activeRoomMeta.title || "PulseMeet Room");
+        setEl("info-modal-id", this.activeRoomMeta.roomId);
+        setEl("info-modal-mode", this.pendingCallMode === "voice" ? "Voice-Only Call" : "Video & Audio Meeting");
+        setEl("info-modal-host", this.activeRoomMeta.hostName || "Host");
+        setEl(
+          "info-modal-signaling",
+          this.signaling.mode === "firebase" ? "Firebase Realtime Database" : "Local BroadcastChannel (Multi-Tab)"
+        );
+        setEl("info-modal-invite-text", inviteText);
+
+        document.getElementById("modal-meeting-info")?.classList.add("open");
+      }
+
+      async copyMeetingInvitation() {
+        if (!this.activeRoomMeta) return;
+        const inviteText = this.roomManager.buildInvitationText({
+          roomId: this.activeRoomMeta.roomId,
+          title: this.activeRoomMeta.title,
+          hostName: this.activeRoomMeta.hostName,
+          mode: this.pendingCallMode
+        });
+        await this.copyTextToClipboard(inviteText, "Meeting invitation copied to clipboard!");
+      }
+
+      async copyTextToClipboard(text, successMsg) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            this.ui.showToast(successMsg, "success");
+            return;
+          }
+        } catch (_err) {
+          // Fallback for sandboxed iframes
+        }
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          this.ui.showToast(successMsg, "success");
+        } catch (_err2) {
+          this.ui.showToast("Could not copy automatically. Open Meeting Info to copy manually.", "warn");
+        }
+      }
+
+      async leaveActiveMeeting(reasonMessage = "Left meeting.") {
+        this.stopCallTimer();
+        const roomId = this.activeRoomMeta?.roomId;
+        const partId = this.localParticipant?.id;
+
+        this.webrtc.closeAllPeers();
+        this.mediaManager.stopAllLocalMedia();
+        this.remoteStreams.clear();
+        this.participantManager.clear();
+        this.ui.clearAllTiles();
+
+        document.getElementById("participants-drawer")?.classList.remove("open");
+        document.getElementById("modal-meeting-info")?.classList.remove("open");
+        document.getElementById("modal-confirm-end")?.classList.remove("open");
+
+        if (roomId && partId) {
+          await this.signaling.leaveRoom(roomId, partId);
+        }
+
+        this.activeRoomMeta = null;
+        this.localParticipant = null;
+        this.currentView = "home";
+        this.ui.showView("view-home");
+        if (reasonMessage) {
+          this.ui.showToast(reasonMessage, "info");
+        }
+      }
+
+      async endMeetingForAll() {
+        if (!this.activeRoomMeta || !this.localParticipant?.isHost) return;
+        const roomId = this.activeRoomMeta.roomId;
+        await this.signaling.endRoomForEveryone(roomId);
+        await this.leaveActiveMeeting("Ended the meeting for everyone.");
+      }
+    }
+
+    // Boot Application on DOMContentLoaded
+    window.addEventListener("DOMContentLoaded", () => {
+      const app = new ApplicationController();
+      app.init();
+    });
+  </script>
+</body>
+</html>
